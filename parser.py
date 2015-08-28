@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
-#from Tag import tag, attribs, name_cleaner
 from Tag import *
 
 def define_tags(lines, direction=-1, init='import string\nprint("yee-haw!")', **kwargs):
 	# customization:
-	w = direction
+	w, hr = direction, len(lines)
 	#
 	my_globals = dict(kwargs) # copy
 	my_globals['attribs'] = attribs
 	my_globals['tag'] = tag
 	exec(init, my_globals)
 	for line_no, line in enumerate(lines):
+		if not line.strip():
+			continue
 		for tokens in line.split(';'):
 			params = dict(kwargs) # copy
 			params['line'] = line_no
 			# customization:
-			params['rank'] = params['srank'] = w
+			params['rank'] = w
+			params['pri'] = hr-line_no
 			#
 			orig_params = dict(params)
 			for token in tokens.split():
@@ -32,7 +34,7 @@ def define_tags(lines, direction=-1, init='import string\nprint("yee-haw!")', **
 		#
 #
 def pack(list_of_tags):
-	'''Given a list of strings and TagObjects, remove tied-ranked TagObjects in-place. This also removes duplicates
+	'''Given a list of strings and TagObjects, remove tied-ranked TagObjects in-place. This also removes duplicates.
 	'''
 	for i in range(-1, -len(list_of_tags), -1):
 		if hasattr(list_of_tags[i], 'rank'):
@@ -45,11 +47,12 @@ def pack(list_of_tags):
 			if (r == t.rank):
 				list_of_tags.remove(t)
 	return list_of_tags
-def convert(iterable):
-	items, negations = [], []
+def convert(iterable, negations=None):
+	items = []
+	negations = negations or []
 	a = items.append
 	def extend(list_of_tags, item):
-		'''Contains much customization code
+		'''Relies heavily on members added during runtime.
 		'''
 		if isinstance(item, TagObject):
 			# customization:
@@ -89,16 +92,27 @@ def convert(iterable):
 		except:
 			print("Couldn't remove {}".format(n))
 	return items
+def arrange(iterable, key=lambda t: -t.rank, **kwargs):
+	cts = convert(iterable, **kwargs)
+	tags, nontags = [], []
+	for item in cts:
+		(tags if isinstance(item, TagObject) else nontags).append(item)
+		tags.sort(key=key)
+	highest_pri = max(t.pri for t in tags)
+	total_rank = sum(t.rank for t in tags)
+	return highest_pri, total_rank, tags+nontags
+def attribs_key(args):
+	'''Deals with the elements of attribs.items()
+	'''
+	name, members = args
+	#return -members['rank']
+	return 'isolate' in members, -members['pri'], -members['rank']
 if __name__ == '__main__':
-	"""Example syntax:
-	red, yellow and blue are defined on the first line, with yellow and blue having higher rank than red.
-	purple and orange will have higher rank than green. The extra code past green will be ignored because there are no tags following it.
-	off_white has a custom property called srank
-	puce has a property called 'removes' which makes it erase any preceeding green
-	mauve has a property called 'appends' which brings puce in immediately behind it
-	"""
 	with open('examples') as fi:
 		define_tags(fi.read().splitlines(), custom_attr='Wednesday')
-	for k, v in sorted(attribs.items(), key=lambda k_v: k_v[-1]['rank']):
-		print(k, v)
+	for n, (t, a) in enumerate(sorted(attribs.items(), key=attribs_key)):
+		r = a['rank']
+		p = a['pri']
+		nbr_count = sum(1 for t, a in attribs.items() if a['rank'] == r)
+		print("{:03d}".format(n), t, r, p, nbr_count)
 		

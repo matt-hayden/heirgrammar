@@ -1,5 +1,5 @@
-						red				srank*=3	yellow blue
-srank<<=2				purple orange;	srank>>=3	green		code_without_noncode_to_the_right_must_parse_but_is_ignored=NotImplemented
+						red				pri*=3	yellow blue
+pri<<=2				purple orange;	pri>>=3	green		code_without_noncode_to_the_right_must_parse_but_is_ignored=NotImplemented
 rank=0					off_white
 removes=[tag('green')]	puce
 appends=[tag('puce')]	mauve

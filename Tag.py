@@ -30,7 +30,7 @@ def name_cleaner(text, stopwords='+_'):
 	while text and text[0] in stopwords:
 		text = text[1:]
 	while text and text[-1] in stopwords:
-		text = text[-1]
+		text = text[:-1]
 	if ' ' in text:
 		text = text.replace(' ', '_')
 	return text
