@@ -2,6 +2,8 @@
 from Tag import *
 
 def define_tags(lines, direction=-1, init='import string\nprint("yee-haw!")', **kwargs):
+	"""This function is the major setup function for the module. The init value is a string of Python commands, for example imports.
+	"""
 	# customization:
 	w, hr = direction, len(lines)
 	#
@@ -30,12 +32,12 @@ def define_tags(lines, direction=-1, init='import string\nprint("yee-haw!")', **
 						t = tag(token)
 					t.update(params)
 		# customization:
-		w <<= 2
+		w <<= 1
 		#
 #
 def pack(list_of_tags):
-	'''Given a list of strings and TagObjects, remove tied-ranked TagObjects in-place. This also removes duplicates.
-	'''
+	"""Given a list of strings and TagObjects, remove tie-ranked TagObjects in-place. This also removes duplicates.
+	"""
 	for i in range(-1, -len(list_of_tags), -1):
 		if hasattr(list_of_tags[i], 'rank'):
 			break
@@ -52,15 +54,15 @@ def convert(iterable, negations=None):
 	negations = negations or []
 	a = items.append
 	def extend(list_of_tags, item):
-		'''Relies heavily on members added during runtime.
-		'''
+		"""Relies heavily on members added during runtime.
+		"""
 		if isinstance(item, TagObject):
-			# customization:
 			if hasattr(item, 'removes'):
 				negations.extend(item.removes)
+			if hasattr(item, 'prepends'):
+				items.extend(item.prepends)
 			a(item)
 			list_of_tags = pack(list_of_tags)
-			# customization:
 			if hasattr(item, 'appends'):
 				items.extend(item.appends)
 		elif (item in attribs):
@@ -102,10 +104,10 @@ def arrange(iterable, key=lambda t: -t.rank, **kwargs):
 	total_rank = sum(t.rank for t in tags)
 	return highest_pri, total_rank, tags+nontags
 def attribs_key(args):
-	'''Deals with the elements of attribs.items()
-	'''
+	"""Deals with the elements of attribs.items()
+	"""
 	name, members = args
-	#return -members['rank']
+	#return -members['rank'] # 
 	return 'isolate' in members, -members['pri'], -members['rank']
 if __name__ == '__main__':
 	with open('examples') as fi:
