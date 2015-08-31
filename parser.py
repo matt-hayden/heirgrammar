@@ -103,18 +103,25 @@ def arrange(iterable, key=lambda t: -t.rank, **kwargs):
 	highest_pri = max(t.pri for t in tags)
 	total_rank = sum(t.rank for t in tags)
 	return highest_pri, total_rank, tags+nontags
-def attribs_key(args):
-	"""Deals with the elements of attribs.items()
-	"""
-	name, members = args
-	#return -members['rank'] # 
-	return 'isolate' in members, -members['pri'], -members['rank']
-if __name__ == '__main__':
-	with open('examples') as fi:
-		define_tags(fi.read().splitlines(), custom_attr='Wednesday')
+def setup(filename, delim='\n'*2, **kwargs):
+	with open(filename) as fi:
+		define_tags(fi.read().split(delim), **kwargs)
+def print_attribs(header="lno "+"rank".rjust(25)+" pri count label"):
+	def attribs_key(args):
+		"""Deals in the elements of attribs.items()
+		"""
+		name, members = args
+		#return -members['rank'] # 
+		return 'isolate' in members, -members['pri'], -members['rank']
+	if header:
+		print(header)
+		print("="*len(header))
 	for n, (t, a) in enumerate(sorted(attribs.items(), key=attribs_key)):
 		r = a['rank']
 		p = a['pri']
 		nbr_count = sum(1 for t, a in attribs.items() if a['rank'] == r)
-		print("{:03d}".format(n), t, r, p, nbr_count)
-		
+		print("{:03d} {:25d} {:3d} {:5d} {!r}".format(n, r, p, nbr_count, tag(t) ))
+if __name__ == '__main__':
+	setup('examples')
+	print_attribs()
+
