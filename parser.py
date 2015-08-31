@@ -3,6 +3,9 @@ import re
 
 from Tag import *
 
+def debug(*args):
+	pass
+
 def define_tags(lines, direction=-1, init='import string\nprint("yee-haw!")', **kwargs):
 	"""This function is the major setup function for the module. The init value is a string of Python commands, for example imports.
 	"""
@@ -52,6 +55,11 @@ def pack(list_of_tags):
 				list_of_tags.remove(t)
 	return list_of_tags
 def convert(iterable, negations=None):
+	"""
+>>> convert('red green blue banana APPLE nogreen purple red'.split())
+['banana', 'APPLE', <purple>, <red>]
+
+"""
 	items = []
 	negations = negations or []
 	a = items.append
@@ -94,7 +102,7 @@ def convert(iterable, negations=None):
 		try:
 			items.remove(n)
 		except:
-			print("Couldn't remove {}".format(n))
+			debug("Failed to remove {}".format(n))
 	return items
 def split(iterable, key=lambda t: -t.rank, **kwargs):
 	cts = convert(iterable, **kwargs)
@@ -105,11 +113,12 @@ def split(iterable, key=lambda t: -t.rank, **kwargs):
 	return tags, nontags
 def arrange(iterable, **kwargs):
 	"""
->>> arrange('green blue +18 nogreen puce'.split())
+>>> arrange('green blue +18 nogreen puce'.split()) 
 (15, -9, [<blue>, <puce>, '+18'])
 
->>> arrange('green blue +18 nogreen mauve'.split())                                                                                                                       
+>>> arrange('green blue +18 nogreen mauve'.split()) 
 (15, -25, [<blue>, <puce>, <mauve>, '+18'])
+
 """
 	tags, nontags = split(iterable, **kwargs)
 	highest_pri = max(t.pri for t in tags)
