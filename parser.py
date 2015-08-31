@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import re
+
 from Tag import *
 
 def define_tags(lines, direction=-1, init='import string\nprint("yee-haw!")', **kwargs):
@@ -94,19 +96,30 @@ def convert(iterable, negations=None):
 		except:
 			print("Couldn't remove {}".format(n))
 	return items
-def arrange(iterable, key=lambda t: -t.rank, **kwargs):
+def split(iterable, key=lambda t: -t.rank, **kwargs):
 	cts = convert(iterable, **kwargs)
 	tags, nontags = [], []
 	for item in cts:
 		(tags if isinstance(item, TagObject) else nontags).append(item)
 		tags.sort(key=key)
+	return tags, nontags
+def arrange(iterable, **kwargs):
+	"""
+>>> arrange('green blue +18 nogreen puce'.split())
+(15, -9, [<blue>, <puce>, '+18'])
+
+>>> arrange('green blue +18 nogreen mauve'.split())                                                                                                                       
+(15, -25, [<blue>, <puce>, <mauve>, '+18'])
+"""
+	tags, nontags = split(iterable, **kwargs)
 	highest_pri = max(t.pri for t in tags)
 	total_rank = sum(t.rank for t in tags)
 	return highest_pri, total_rank, tags+nontags
-def setup(filename, delim='\n'*2, **kwargs):
+def setup(filename, delim=re.compile('\n[ \t]*\n'), **kwargs):
 	with open(filename) as fi:
-		define_tags(fi.read().split(delim), **kwargs)
-def print_attribs(header="lno "+"rank".rjust(25)+" pri count label"):
+		#define_tags(re.split(delim, fi.read() ), **kwargs)
+		define_tags(delim.split(fi.read()), **kwargs)
+def print_attribs(header="lno "+"rank".rjust(25)+" -pri- count label"):
 	def attribs_key(args):
 		"""Deals in the elements of attribs.items()
 		"""
@@ -120,8 +133,11 @@ def print_attribs(header="lno "+"rank".rjust(25)+" pri count label"):
 		r = a['rank']
 		p = a['pri']
 		nbr_count = sum(1 for t, a in attribs.items() if a['rank'] == r)
-		print("{:03d} {:25d} {:3d} {:5d} {!r}".format(n, r, p, nbr_count, tag(t) ))
+		#print("{:03d} {:25d} {:5d} {:5d} {!r}".format(n, r, p, nbr_count, tag(t) ))
+		print("{:03d} {:25d} {:5d} {:5d} {}".format(n, r, p, nbr_count, tag(t) ))
 if __name__ == '__main__':
+	import doctest
+
 	setup('examples')
 	print_attribs()
-
+	doctest.testmod()
