@@ -31,9 +31,12 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 		if sys.platform.startswith('darwin'):
 			yield '''MV=gmv'''
 			yield '''FIND=gfind'''
+		#elif sys.platform.startswith('win32'): # ...
 		else:
 			yield '''MV=mv'''
 			yield '''FIND=find'''
+		yield '''$FIND \( -name .DS_Store -o -iname Thumbs.DB -o -empty \) -exec trash '{}' +'''
+		yield '''$FIND -empty -exec trash '{}' +'''
 	for n, (size, pairs) in ops:
 		for src, dest in pairs:
 			if prefix:
