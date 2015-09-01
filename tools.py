@@ -5,21 +5,41 @@ import shutil
 
 import parser, TagFile
 
+class Namespace(dict):
+	def __init__(self, *args, **kwargs):
+		super(Namespace, self).__init__(*args, **kwargs)
+		self.__dict__ = self
+
 debug=print
 
 
-def path_split(path, stopwords=['sortme'], sep=os.path.sep, **kwargs):
-	parts = [ p for p in path.split(sep) if p not in ['', '.', '..'] ]
+def path_split(path, stopwords=['rules', 'sortme'], sep=os.path.sep, **kwargs):
+	path_parts = [ p for p in path.split(sep) if p not in ['', '.', '..'] ]
+	parts = []
+	a = parts.append
+	for p in path_parts:
+		if ',' in p:
+			sub_parts = p.split(',')
+			tags, nontags = parser.split(sub_parts)
+			if nontags:
+				a(p)
+			else:
+				parts.extend(sub_parts)
+		else:
+			a(p)
 	#if any(w in parts for w in stopwords):
 	if set(stopwords) & set(parts):
-		return
+		return [], path
 	tags, s = parser.split(parts, **kwargs)
 	return tags, sep.join(str(p) for p in s)
 def path_arrange(*args, **kwargs):
 	sep = kwargs.get('sep', os.path.sep)
 	tags, newpath = path_split(*args, **kwargs)
-	highest_pri = max(t.pri for t in tags)
-	total_rank = sum(t.rank for t in tags)
+	if tags:
+		highest_pri = max(t.pri for t in tags)
+		total_rank = sum(t.rank for t in tags)
+	else:
+		highest_pri = total_rank = 0
 	return highest_pri, total_rank, sep.join(str(t) for t in tags+[newpath])
 def path_detag(arg, tagfile='.tags', move=shutil.move, dest='tagged', **kwargs):
 	tags, newpath = path_split(arg, **kwargs)
@@ -39,12 +59,39 @@ def path_detag(arg, tagfile='.tags', move=shutil.move, dest='tagged', **kwargs):
 	tf.merge(newpath, tags)
 	return newpath, tagfile
 def walk(*args, **kwargs):
-	for root, dirs, files in os.walk(*args, **kwargs):
-		if files:
-			print(root, path_arrange(root))
-def check_if_sorted(arg, **kwargs):
-	_, _, newpath = path_arrange(arg, **kwargs)
-	return (newpath in arg)
+	for root, dirs, files in os.walk(*args):
+		src = os.path.relpath(root)
+		if (not files) or (src in ['.', '..', '']):
+			debug("Skipping "+src)
+			continue
+		pri, rank, newpath = path_arrange(src, **kwargs)
+		if src == os.path.relpath(newpath):
+			debug("Doing nothing: "+src)
+			continue
+		file_size = sum(os.path.getsize(os.path.join(src, f)) for f in files)
+		yield pri, rank, file_size, (src, newpath)
+def chunk(*args, volumesize=200E6, **kwargs):
+	def key(arg):
+		p, r, s, _ = arg
+		return -p, -s
+	if not volumesize:
+		yield from sorted(walk(*args, **kwargs), key=key)
+	this_size, this_vol = 0, []
+	for p, r, s, (src, dest) in sorted(walk(*args, **kwargs), key=key):
+		assert s < volumesize
+		if volumesize < this_size+s:
+			yield this_size, this_vol
+			this_size, this_vol = s, [ (src, dest) ]
+		else:
+			this_size += s
+			this_vol.append( (src, dest) )
+	if this_size:
+		yield this_size, this_vol
 #
 if __name__ == '__main__':
-	parser.setup('examples')
+	from glob import glob
+	import sys
+
+	parser.setup(glob('rules/*'))
+	for arg in sys.argv[1:]:
+		print(arg, path_split(arg))

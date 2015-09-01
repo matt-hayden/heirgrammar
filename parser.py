@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os, os.path
 import re
 
 from Tag import *
@@ -42,7 +43,7 @@ def define_tags(lines, direction=-1, init='''import string\nprint("yee-haw!")'''
 	del my_globals
 #
 def pack(list_of_tags):
-	"""Given a list of strings and TagObjects, remove tie-ranked TagObjects in-place. This also removes duplicates.
+	"""Given a list of strings and TagObjects, remove TagObjects with the same rank as the right-most TagObject (in-place). This applies to duplicates.
 	"""
 	for i in range(-1, -len(list_of_tags), -1):
 		if hasattr(list_of_tags[i], 'rank'):
@@ -71,7 +72,9 @@ def convert(iterable, negations=None):
 			if hasattr(item, 'removes'):
 				negations.extend(item.removes)
 			if hasattr(item, 'prepends'):
-				items.extend(item.prepends)
+				for p in item.prepends:
+					a(p)
+					list_of_tags = pack(list_of_tags)
 			a(item)
 			list_of_tags = pack(list_of_tags)
 			if hasattr(item, 'appends'):
@@ -80,7 +83,7 @@ def convert(iterable, negations=None):
 			extend(list_of_tags, tag(item))
 		else:
 			a(item)
-		return list_of_tags
+		return pack(list_of_tags)
 	for field, literal in enumerate(iterable):
 		if literal in attribs:
 			extend(items, literal)
@@ -104,7 +107,7 @@ def convert(iterable, negations=None):
 			items.remove(n)
 		except:
 			debug("Failed to remove {}".format(n))
-	return items
+	return pack(items)
 def split(iterable, key=lambda t: -t.rank, **kwargs):
 	cts = convert(iterable, **kwargs)
 	tags, nontags = [], []
@@ -131,9 +134,11 @@ def arrange(iterable, **kwargs):
 def setup(filenames, delim=re.compile('\n[ \t]*\n'), init=[], **kwargs):
 	content = init
 	for fn in filenames:
+		assert os.path.isfile(fn) and os.path.getsize(fn)
 		with open(fn) as fi:
 			content += delim.split(fi.read())
 	define_tags(content, **kwargs)
+	return filenames
 def print_attribs(header="lno "+"rank".rjust(25)+" -pri- count label"):
 	def attribs_key(args):
 		"""Deals in the elements of attribs.items()
@@ -153,6 +158,6 @@ if __name__ == '__main__':
 	import doctest
 	from glob import glob
 
-	setup(sorted(glob('*.rules')))
+	setup(sorted(glob('rules/*')))
 	print_attribs()
 	doctest.testmod()

@@ -27,11 +27,8 @@ try:
 except NameError:
 	lookup_table = {}
 #
-def name_cleaner(text, stopwords='+_'):
-	while text and text[0] in stopwords:
-		text = text[1:]
-	while text and text[-1] in stopwords:
-		text = text[:-1]
+def name_cleaner(text):
+	text = text.strip('+_')
 	if ' ' in text:
 		text = text.replace(' ', '_')
 	return text
@@ -56,6 +53,7 @@ class TagObject(TagBaseObject):
 		if isinstance(other, TagBaseObject):
 			return self.id == other.id
 		else:
+			assert isinstance(self, TagBaseObject)
 			return self.name == name_cleaner(other)
 	# if defining __eq__ then also define __hash__
 	def __hash__(self):
