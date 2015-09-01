@@ -6,11 +6,11 @@ from Tag import *
 def debug(*args):
 	pass
 
-def define_tags(lines, direction=-1, init='import string\nprint("yee-haw!")', **kwargs):
+def define_tags(lines, direction=-1, init='''import string\nprint("yee-haw!")''', **kwargs):
 	"""This function is the major setup function for the module. The init value is a string of Python commands, for example imports.
 	"""
 	# customization:
-	w, hr = direction, len(lines)
+	w, highest_pri = direction, len(lines)
 	#
 	my_globals = dict(kwargs) # copy
 	my_globals['attribs'] = attribs
@@ -24,9 +24,9 @@ def define_tags(lines, direction=-1, init='import string\nprint("yee-haw!")', **
 			params['line'] = line_no
 			# customization:
 			params['rank'] = w
-			params['pri'] = hr-line_no
+			params['pri'] = highest_pri-line_no
 			#
-			orig_params = dict(params)
+			#orig_params = dict(params)
 			for token in tokens.split():
 				if '=' in token:
 					exec(token, my_globals, params)
@@ -36,9 +36,10 @@ def define_tags(lines, direction=-1, init='import string\nprint("yee-haw!")', **
 					else:
 						t = tag(token)
 					t.update(params)
+			del params
 		# customization:
 		w <<= 1
-		#
+	del my_globals
 #
 def pack(list_of_tags):
 	"""Given a list of strings and TagObjects, remove tie-ranked TagObjects in-place. This also removes duplicates.
@@ -114,27 +115,32 @@ def split(iterable, key=lambda t: -t.rank, **kwargs):
 def arrange(iterable, **kwargs):
 	"""
 >>> arrange('green blue +18 nogreen puce'.split()) 
-(15, -9, [<blue>, <puce>, '+18'])
+(10, -9, [<blue>, <puce>, '+18'])
 
 >>> arrange('green blue +18 nogreen mauve'.split()) 
-(15, -25, [<blue>, <puce>, <mauve>, '+18'])
+(10, -25, [<blue>, <puce>, <mauve>, '+18'])
 
 """
 	tags, nontags = split(iterable, **kwargs)
-	highest_pri = max(t.pri for t in tags)
-	total_rank = sum(t.rank for t in tags)
+	if tags:
+		highest_pri = max(t.pri for t in tags)
+		total_rank = sum(t.rank for t in tags)
+	else:
+		highest_pri = total_rank = 0
 	return highest_pri, total_rank, tags+nontags
-def setup(filename, delim=re.compile('\n[ \t]*\n'), **kwargs):
-	with open(filename) as fi:
-		#define_tags(re.split(delim, fi.read() ), **kwargs)
-		define_tags(delim.split(fi.read()), **kwargs)
+def setup(filenames, delim=re.compile('\n[ \t]*\n'), init=[], **kwargs):
+	content = init
+	for fn in filenames:
+		with open(fn) as fi:
+			content += delim.split(fi.read())
+	define_tags(content, **kwargs)
 def print_attribs(header="lno "+"rank".rjust(25)+" -pri- count label"):
 	def attribs_key(args):
 		"""Deals in the elements of attribs.items()
 		"""
 		name, members = args
-		#return -members['rank'] # 
-		return 'isolate' in members, -members['pri'], -members['rank']
+		return -members['rank'], name
+		return 'isolate' in members, -members['pri'], -members['rank'], name
 	if header:
 		print(header)
 		print("="*len(header))
@@ -142,11 +148,11 @@ def print_attribs(header="lno "+"rank".rjust(25)+" -pri- count label"):
 		r = a['rank']
 		p = a['pri']
 		nbr_count = sum(1 for t, a in attribs.items() if a['rank'] == r)
-		#print("{:03d} {:25d} {:5d} {:5d} {!r}".format(n, r, p, nbr_count, tag(t) ))
-		print("{:03d} {:25d} {:5d} {:5d} {}".format(n, r, p, nbr_count, tag(t) ))
+		print("{:03d} {:25d} {:5.1f} {:5d} {}".format(n, r, p, nbr_count, tag(t) ))
 if __name__ == '__main__':
 	import doctest
+	from glob import glob
 
-	setup('examples')
+	setup(sorted(glob('*.rules')))
 	print_attribs()
 	doctest.testmod()
