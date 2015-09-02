@@ -70,28 +70,31 @@ def walk(*args, **kwargs):
 			continue
 		file_size = sum(os.path.getsize(os.path.join(src, f)) for f in files)
 		yield pri, rank, file_size, (src, newpath)
-def chunk(*args, volumesize=200E6, **kwargs):
+def chunk(*args, volumesize=0, **kwargs):
 	def key(arg):
 		p, r, s, _ = arg
-		return -p, -s
+		return r, -s
 	if not volumesize:
-		yield from sorted(walk(*args, **kwargs), key=key)
-	this_size, this_vol = 0, []
-	for p, r, s, (src, dest) in sorted(walk(*args, **kwargs), key=key):
-		assert s < volumesize
-		if volumesize < this_size+s:
+		my_list = sorted(walk(*args, **kwargs), key=key)
+		my_size = sum(s for p, r, s, _ in my_list)
+		yield (0, (pairs for p, r, s, pairs in my_list))
+	else:
+		this_size, this_vol = 0, []
+		for p, r, s, (src, dest) in sorted(walk(*args, **kwargs), key=key):
+			assert s < volumesize
+			if volumesize < this_size+s:
+				yield this_size, this_vol
+				this_size, this_vol = s, [ (src, dest) ]
+			else:
+				this_size += s
+				this_vol.append( (src, dest) )
+		if this_size:
 			yield this_size, this_vol
-			this_size, this_vol = s, [ (src, dest) ]
-		else:
-			this_size += s
-			this_vol.append( (src, dest) )
-	if this_size:
-		yield this_size, this_vol
 #
 if __name__ == '__main__':
 	from glob import glob
 	import sys
 
-	parser.setup(glob('rules/*'))
+	parser.setup(glob('rules/*.rules'))
 	for arg in sys.argv[1:]:
 		print(arg, path_split(arg))

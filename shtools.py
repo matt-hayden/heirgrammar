@@ -43,13 +43,13 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 				dest = prefix.format(n)+dest
 			yield _move(src, dest)
 	if not init:
-		yield '''$FIND -empty -ls -delete'''
+		yield '''$FIND -empty -exec trash '{}' +'''
 
 if __name__ == '__main__':
 	from glob import glob
 	import sys
 
-	parser.setup(glob('rules/*'))
+	parser.setup(glob('rules/*.rules'))
 	#for line in hier_arrange('.', 200E6, prefix='volume_'):
 	for line in hier_arrange(sys.argv[1], 0):
 		print(line)

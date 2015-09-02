@@ -133,7 +133,7 @@ def arrange(iterable, **kwargs):
 	return highest_pri, total_rank, tags+nontags
 def setup(filenames, delim=re.compile('\n[ \t]*\n'), init=[], **kwargs):
 	content = init
-	for fn in filenames:
+	for fn in sorted(filenames):
 		assert os.path.isfile(fn) and os.path.getsize(fn)
 		with open(fn) as fi:
 			content += delim.split(fi.read())
