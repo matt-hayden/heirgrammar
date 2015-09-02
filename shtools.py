@@ -5,6 +5,7 @@ import parser, tools
 
 def _move(src, dest):
 	assert os.path.isdir(src)
+	assert "'" not in src and "'" not in dest # TODO
 	if os.path.exists(dest):
 		assert os.path.isdir(dest)
 	if os.path.relpath(src) == os.path.relpath(dest):
@@ -15,8 +16,12 @@ def _move(src, dest):
 '''.format(**locals())
 	return syntax
 def hier_arrange(*args, prefix='', init='', **kwargs):
-	ops = list(enumerate(tools.chunk(*args, **kwargs), start=1))
-	if not ops:
+	if args == ('.',):
+		fargs = ''
+	else:
+		fargs = ' '.join("'{}'".format(a) for a in args) # see quote assert above
+	chunks = tools.chunk(*args, **kwargs)
+	if not chunks:
 		raise StopIteration
 	if prefix:
 		if '{}' not in prefix:
@@ -35,21 +40,20 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 		else:
 			yield '''MV=mv'''
 			yield '''FIND=find'''
-		yield '''$FIND \( -name .DS_Store -o -iname Thumbs.DB -o -empty \) -exec trash '{}' +'''
-		yield '''$FIND -empty -exec trash '{}' +'''
-	for n, (size, pairs) in ops:
+		yield '''$FIND {fargs} \( -name .DS_Store -o -iname Thumbs.DB -o -empty \) -delete'''.format(**locals())
+		yield '''$FIND {fargs} -empty -delete'''.format(**locals())
+	for n, (size, pairs) in enumerate(chunks, start=1):
 		for src, dest in pairs:
 			if prefix:
 				dest = prefix.format(n)+dest
 			yield _move(src, dest)
 	if not init:
-		yield '''$FIND -empty -exec trash '{}' +'''
+		yield '''$FIND {fargs} -empty -delete'''.format(**locals())
 
 if __name__ == '__main__':
 	from glob import glob
 	import sys
 
 	parser.setup(glob('rules/*.rules'))
-	#for line in hier_arrange('.', 200E6, prefix='volume_'):
-	for line in hier_arrange(sys.argv[1], 0):
+	for line in hier_arrange(*sys.argv[1:]):
 		print(line)

@@ -13,7 +13,7 @@ class Namespace(dict):
 debug=print
 
 
-def path_split(path, stopwords=['rules', 'sortme'], sep=os.path.sep, **kwargs):
+def path_split(path, stopwords=['delme', 'rules', 'sortme', 'working'], sep=os.path.sep, **kwargs):
 	path_parts = [ p for p in path.split(sep) if p not in ['', '.', '..'] ]
 	parts = []
 	a = parts.append
@@ -59,28 +59,38 @@ def path_detag(arg, tagfile='.tags', move=shutil.move, dest='tagged', **kwargs):
 	tf.merge(newpath, tags)
 	return newpath, tagfile
 def walk(*args, **kwargs):
-	for root, dirs, files in os.walk(*args):
-		src = os.path.relpath(root)
-		if (not files) or (src in ['.', '..', '']):
-			debug("Skipping "+src)
-			continue
-		pri, rank, newpath = path_arrange(src, **kwargs)
-		if src == os.path.relpath(newpath):
-			debug("Doing nothing: "+src)
-			continue
-		file_size = sum(os.path.getsize(os.path.join(src, f)) for f in files)
-		yield pri, rank, file_size, (src, newpath)
-def chunk(*args, volumesize=0, **kwargs):
-	def key(arg):
-		p, r, s, _ = arg
-		return r, -s
-	if not volumesize:
-		my_list = sorted(walk(*args, **kwargs), key=key)
-		my_size = sum(s for p, r, s, _ in my_list)
-		yield (0, (pairs for p, r, s, pairs in my_list))
+	for arg in args:
+		assert not isinstance(arg, list)
+		for root, dirs, files in os.walk(arg):
+			src = os.path.relpath(root)
+			if (not files) or (src in ['.', '..', '']):
+				debug("Skipping "+src)
+				continue
+			pri, rank, newpath = path_arrange(src, **kwargs)
+			if src == os.path.relpath(newpath):
+				debug("Doing nothing: "+src)
+				continue
+			file_size = sum(os.path.getsize(os.path.join(src, f)) for f in files)
+			yield pri, rank, file_size, (src, newpath)
+def chunk(*args, **kwargs):
+	volumesize = kwargs.pop('volumesize', 0)
+	if kwargs.pop('pri', False):
+		def key(arg):
+			p, r, s, _ = arg
+			return -p, r, -s
 	else:
-		this_size, this_vol = 0, []
-		for p, r, s, (src, dest) in sorted(walk(*args, **kwargs), key=key):
+		def key(arg):
+			p, r, s, _ = arg
+			return r, -s
+	my_list = sorted(walk(*args, **kwargs), key=key)
+	if not volumesize:
+		my_size = sum(s for p, r, s, _ in my_list)
+		if my_size:
+			return (my_size, [pairs for _, _, _, pairs in my_list])
+		else:
+			return None
+	def _gen(this_size=0, this_vol=[]):
+		for p, r, s, (src, dest) in my_list:
 			assert s < volumesize
 			if volumesize < this_size+s:
 				yield this_size, this_vol
@@ -88,8 +98,9 @@ def chunk(*args, volumesize=0, **kwargs):
 			else:
 				this_size += s
 				this_vol.append( (src, dest) )
-		if this_size:
+		if this_size: # last
 			yield this_size, this_vol
+	return list(_gen())
 #
 if __name__ == '__main__':
 	from glob import glob
