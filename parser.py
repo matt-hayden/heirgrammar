@@ -2,20 +2,17 @@
 import os, os.path
 import re
 
-from Tag import *
+from Taxon import *
 
 def debug(*args):
 	pass
 
-def define_tags(lines, direction=-1, init='''import string\nprint("yee-haw!")''', **kwargs):
-	"""This function is the major setup function for the module. The init value is a string of Python commands, for example imports.
-	"""
-	# customization:
+def define_tags(lines, direction=-1, init='''import string\nprint("# yee-haw!")''', **kwargs):
+	"""This is the major setup function for the module."""
+	# customize here:
 	w, highest_pri = direction, len(lines)
 	#
-	my_globals = dict(kwargs) # copy
-	my_globals['attribs'] = attribs
-	my_globals['tag'] = tag
+	my_globals = { 'Taxonomy': Taxonomy, 'tag': tag }
 	exec(init, my_globals)
 	for line_no, line in enumerate(lines):
 		if not line.strip():
@@ -23,27 +20,26 @@ def define_tags(lines, direction=-1, init='''import string\nprint("yee-haw!")'''
 		for tokens in line.split(';'):
 			params = dict(kwargs) # copy
 			params['line'] = line_no
-			# customization:
+			# customize here:
 			params['rank'] = w
-			params['pri'] = highest_pri-line_no
+			params['pri'] = line_no if (0 <= direction) else highest_pri-line_no
 			#
-			#orig_params = dict(params)
 			for token in tokens.split():
 				if '=' in token:
 					exec(token, my_globals, params)
 				else:
 					if '_' in token:
+						# synonyms lookup to the token
 						t = tag(token, synonyms=[token.replace('_', ' ')])
 					else:
 						t = tag(token)
 					t.update(params)
-			del params
-		# customization:
+		# customize here:
 		w <<= 1
-	del my_globals
+		#
 #
 def pack(list_of_tags):
-	"""Given a list of strings and TagObjects, remove TagObjects with the same rank as the right-most TagObject (in-place). This applies to duplicates.
+	"""Given a list of strings and TaxonObjects, remove TaxonObjects with the same rank as the right-most TaxonObject (in-place). This also applies to duplicates.
 	"""
 	for i in range(-1, -len(list_of_tags), -1):
 		if hasattr(list_of_tags[i], 'rank'):
@@ -68,7 +64,7 @@ def convert(iterable, negations=None):
 	def extend(list_of_tags, item):
 		"""Relies heavily on members added during runtime.
 		"""
-		if isinstance(item, TagObject):
+		if isinstance(item, TaxonObject):
 			if hasattr(item, 'removes'):
 				negations.extend(item.removes)
 			if hasattr(item, 'prepends'):
@@ -79,26 +75,26 @@ def convert(iterable, negations=None):
 			list_of_tags = pack(list_of_tags)
 			if hasattr(item, 'appends'):
 				items.extend(item.appends)
-		elif (item in attribs):
+		elif (item in Taxonomy):
 			extend(list_of_tags, tag(item))
 		else:
 			a(item)
 		return pack(list_of_tags)
 	for field, literal in enumerate(iterable):
-		if literal in attribs:
+		if literal in Taxonomy:
 			extend(items, literal)
 			continue
 		else:
 			token = name_cleaner(literal)
 			if token.startswith('no'):
 				n = token[2:]
-				if n in attribs:
+				if n in Taxonomy:
 					t = tag(n)
 					negations.append(t)
 				else:
 					extend(items, token)
 				continue
-			elif token in attribs:
+			elif token in Taxonomy:
 				extend(items, token)
 			else:
 				extend(items, literal)
@@ -112,7 +108,7 @@ def split(iterable, key=lambda t: -t.rank, **kwargs):
 	cts = convert(iterable, **kwargs)
 	tags, nontags = [], []
 	for item in cts:
-		(tags if isinstance(item, TagObject) else nontags).append(item)
+		(tags if isinstance(item, TaxonObject) else nontags).append(item)
 		tags.sort(key=key)
 	return tags, nontags
 def arrange(iterable, **kwargs):
@@ -121,7 +117,7 @@ def arrange(iterable, **kwargs):
 (10, -9, [<blue>, <puce>, '+18'])
 
 >>> arrange('green blue +18 nogreen mauve'.split()) 
-(10, -25, [<blue>, <puce>, <mauve>, '+18'])
+(10, -27, [<blue>, <purple>, <puce>, <mauve>, '+18'])
 
 """
 	tags, nontags = split(iterable, **kwargs)
@@ -131,17 +127,25 @@ def arrange(iterable, **kwargs):
 	else:
 		highest_pri = total_rank = 0
 	return highest_pri, total_rank, tags+nontags
-def setup(filenames, delim=re.compile('\n[ \t]*\n'), init=[], **kwargs):
-	content = init
-	for fn in sorted(filenames):
-		assert os.path.isfile(fn) and os.path.getsize(fn)
-		with open(fn) as fi:
-			content += delim.split(fi.read())
-	define_tags(content, **kwargs)
-	return filenames
-def print_attribs(header="lno "+"rank".rjust(25)+" -pri- count label"):
-	def attribs_key(args):
-		"""Deals in the elements of attribs.items()
+def _read(*args, delim=re.compile('\n[ \t]*\n')):
+	for fn in sorted(args):
+			assert os.path.isfile(fn) and os.path.getsize(fn)
+			with open(fn) as fi:
+				return delim.split(fi.read())
+def setup(arg, **kwargs):
+	if not arg:
+		Taxonomy = {}
+		return
+	elif isinstance(arg, str): # single filename
+		return setup([arg], **kwargs)
+	elif isinstance(arg, (list, tuple)): # list of filenames
+		define_tags(_read(*arg), **kwargs)
+	else:
+		raise NotImplemented
+	return arg
+def print_Taxonomy(header="lno "+"rank".rjust(25)+" -pri- count label"):
+	def key(args):
+		"""Deals in the elements of Taxonomy.items()
 		"""
 		name, members = args
 		return -members['rank'], name
@@ -149,15 +153,15 @@ def print_attribs(header="lno "+"rank".rjust(25)+" -pri- count label"):
 	if header:
 		print(header)
 		print("="*len(header))
-	for n, (t, a) in enumerate(sorted(attribs.items(), key=attribs_key)):
+	for n, (t, a) in enumerate(sorted(Taxonomy.items(), key=key)):
 		r = a['rank']
 		p = a['pri']
-		nbr_count = sum(1 for t, a in attribs.items() if a['rank'] == r)
+		nbr_count = sum(1 for t, a in Taxonomy.items() if a['rank'] == r)
 		print("{:03d} {:25d} {:5.1f} {:5d} {}".format(n, r, p, nbr_count, tag(t) ))
 if __name__ == '__main__':
 	import doctest
 	from glob import glob
 
 	setup(sorted(glob('rules/*')))
-	print_attribs()
+	print_Taxonomy()
 	doctest.testmod()

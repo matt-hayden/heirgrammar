@@ -8,4 +8,6 @@ rank=0	off_white
 
 removes=[tag('green')]	puce
 
-appends=[tag('puce')]	mauve
+prepends=[tag('puce')]
+appends=[tag('purple')]
+	mauve
