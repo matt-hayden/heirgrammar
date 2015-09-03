@@ -82,25 +82,27 @@ def chunk(*args, **kwargs):
 		def key(arg):
 			p, r, s, _ = arg
 			return r, -s
+	chunker = kwargs.pop('chunker', None)
+	if not chunker:
+		def chunker(my_list, this_size=0, this_vol=[]):
+			for p, r, s, (src, dest) in my_list:
+				assert s < volumesize
+				if volumesize < this_size+s:
+					yield this_size, this_vol
+					this_size, this_vol = s, [ (src, dest) ]
+				else:
+					this_size += s
+					this_vol.append( (src, dest) )
+			if this_size: # last
+				yield this_size, this_vol
 	my_list = sorted(walk(*args, **kwargs), key=key)
 	if not volumesize:
 		my_size = sum(s for p, r, s, _ in my_list)
 		if my_size:
-			return (my_size, [pairs for _, _, _, pairs in my_list])
+			return [(my_size, [pairs for _, _, _, pairs in my_list])]
 		else:
 			return None
-	def _gen(this_size=0, this_vol=[]):
-		for p, r, s, (src, dest) in my_list:
-			assert s < volumesize
-			if volumesize < this_size+s:
-				yield this_size, this_vol
-				this_size, this_vol = s, [ (src, dest) ]
-			else:
-				this_size += s
-				this_vol.append( (src, dest) )
-		if this_size: # last
-			yield this_size, this_vol
-	return list(_gen())
+	return list(chunker(my_list))
 #
 if __name__ == '__main__':
 	from glob import glob
