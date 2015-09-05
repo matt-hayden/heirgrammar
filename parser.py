@@ -52,6 +52,7 @@ def pack(list_of_tags):
 			if (r == t.rank):
 				list_of_tags.remove(t)
 	return list_of_tags
+#
 def convert(iterable, negations=None):
 	"""
 >>> convert('red green blue banana APPLE nogreen purple red'.split())
@@ -129,17 +130,18 @@ def arrange(iterable, **kwargs):
 	return highest_pri, total_rank, tags+nontags
 def _read(*args, delim=re.compile('\n[ \t]*\n')):
 	for fn in sorted(args):
-			assert os.path.isfile(fn) and os.path.getsize(fn)
-			with open(fn) as fi:
-				return delim.split(fi.read())
+		assert os.path.isfile(fn) and os.path.getsize(fn)
+		debug("Reading "+fn)
+		with open(fn) as fi:
+			yield from delim.split(fi.read())
 def setup(arg, **kwargs):
 	if not arg:
-		Taxonomy = {}
+		Taxonomy = {'NULL': {'id': 0, 'name': None }}
 		return
 	elif isinstance(arg, str): # single filename
 		return setup([arg], **kwargs)
 	elif isinstance(arg, (list, tuple)): # list of filenames
-		define_tags(_read(*arg), **kwargs)
+		define_tags(list(_read(*arg)), **kwargs)
 	else:
 		raise NotImplemented
 	return arg
@@ -148,16 +150,22 @@ def print_Taxonomy(header="lno "+"rank".rjust(25)+" -pri- count label"):
 		"""Deals in the elements of Taxonomy.items()
 		"""
 		name, members = args
-		return -members['rank'], name
-		return 'isolate' in members, -members['pri'], -members['rank'], name
+		if 'rank' in members:
+			return -members['rank'], name
+		else:
+			return 0, name
+		#return 'isolate' in members, -members.get('pri', 0), -members.get('rank', 0), name
 	if header:
 		print(header)
 		print("="*len(header))
-	for n, (t, a) in enumerate(sorted(Taxonomy.items(), key=key)):
-		r = a['rank']
-		p = a['pri']
-		nbr_count = sum(1 for t, a in Taxonomy.items() if a['rank'] == r)
-		print("{:03d} {:25d} {:5.1f} {:5d} {}".format(n, r, p, nbr_count, tag(t) ))
+	for n, (name, attribs) in enumerate(sorted(Taxonomy.items(), key=key)):
+		try:
+			r = attribs['rank']
+			p = attribs['pri']
+			nbr_count = sum(1 for t, a in Taxonomy.items() if a.get('rank',None) == r)
+			print("{:03d} {:25d} {:5.1f} {:5d} {}".format(n, r, p, nbr_count, tag(name) ))
+		except KeyError as e:
+			print(name, "unsortable:", e)
 if __name__ == '__main__':
 	import doctest
 	from glob import glob
