@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from contextlib import suppress
 import os, os.path
 from os.path import exists, isfile, isdir
 import shutil
@@ -63,6 +64,7 @@ def walk(*args, **kwargs):
 		assert not isinstance(arg, list)
 		for root, dirs, files in os.walk(arg):
 			src = os.path.relpath(root)
+			file_paths = [ os.path.join(src, f) for f in files ]
 			if (not files) or (src in ['.', '..', '']):
 				debug("Skipping "+src)
 				continue
@@ -70,7 +72,9 @@ def walk(*args, **kwargs):
 			if src == os.path.relpath(newpath):
 				debug("Doing nothing: "+src)
 				continue
-			file_size = sum(os.path.getsize(os.path.join(src, f)) for f in files)
+			with suppress(FileNotFoundError):
+				stat_by_file = [ (f, os.stat(f) ) for f in file_paths ]
+			file_size = sum(s.st_size for (f, s) in stat_by_file)
 			yield pri, rank, file_size, (src, newpath)
 def chunk(*args, **kwargs):
 	volumesize = kwargs.pop('volumesize', 0)

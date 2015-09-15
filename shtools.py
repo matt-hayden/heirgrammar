@@ -5,14 +5,15 @@ import parser, tools
 
 def _move(src, dest):
 	assert os.path.isdir(src)
-	assert "'" not in src and "'" not in dest # TODO
+	if "'" in src or "'" in dest:
+		return '# TODO: {} -> {}'.format(src, dest)
 	if os.path.exists(dest):
 		assert os.path.isdir(dest)
 	if os.path.relpath(src) == os.path.relpath(dest):
 		return ''
 	syntax = '''# '{src}' -> '{dest}'
 [[ -d '{dest}' ]] || mkdir -p '{dest}'
-[[ -d '{src}' ]] && $MV -nv -t '{dest}' '{src}'/*
+[[ -d '{src}' ]] && $MV -t '{dest}' '{src}'/*
 '''.format(**locals())
 	return syntax
 def hier_arrange(*args, prefix='', init='', **kwargs):
@@ -34,12 +35,14 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 		yield ''
 	else:	
 		if sys.platform.startswith('darwin'):
-			yield '''MV=gmv'''
+			yield '''MV="gmv -nt"'''
 			yield '''FIND=gfind'''
 		#elif sys.platform.startswith('win32'): # ...
 		else:
-			yield '''MV=mv'''
+			yield '''MV="mv -nv"'''
 			yield '''FIND=find'''
+		yield ''
+		yield ''
 		yield '''$FIND {fargs} \( -name .DS_Store -o -iname Thumbs.DB -o -empty \) -delete'''.format(**locals())
 		yield '''$FIND {fargs} -empty -delete'''.format(**locals())
 	for n, (size, pairs) in enumerate(chunks, start=1):
@@ -48,12 +51,25 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 				dest = prefix.format(n)+dest
 			yield _move(src, dest)
 	if not init:
+		yield ''
 		yield '''$FIND {fargs} -empty -delete'''.format(**locals())
+		yield ''
 
 if __name__ == '__main__':
 	from glob import glob
 	import sys
 
+	try:
+		fdthree = os.fdopen(3, 'w')
+		def shout(*args, **kwargs):
+			kwargs['file'] = fdthree
+			print(*args, **kwargs)
+	except OSError as e: # fd 3 not available
+		shout=print
+
 	parser.setup(glob('rules/*.rules'))
-	for line in hier_arrange(*sys.argv[1:]):
-		print(line)
+	ha = hier_arrange(*sys.argv[1:])
+	if ha:
+		shout('#!/bin/bash')
+		for line in ha:
+			shout(line)

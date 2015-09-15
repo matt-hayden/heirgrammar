@@ -66,6 +66,9 @@ def convert(iterable, negations=None):
 		"""Relies heavily on members added during runtime.
 		"""
 		if isinstance(item, TaxonObject):
+			if hasattr(item, 'purge'):
+				if item.purge:
+					return list_of_tags
 			if hasattr(item, 'removes'):
 				negations.extend(item.removes)
 			if hasattr(item, 'prepends'):
