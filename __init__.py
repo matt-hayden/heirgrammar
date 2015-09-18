@@ -36,6 +36,9 @@ else:
 	warning = logger.warning
 
 error, panic = logger.error, logger.critical
+del fds
+del fdn
+del fdstats
 
 #
 from . import parser, tools, shtools
