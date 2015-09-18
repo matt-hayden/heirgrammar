@@ -4,15 +4,14 @@ import os, os.path
 from os.path import exists, isfile, isdir
 import shutil
 
-import parser, TagFile
+from . import debug, info, warning, error, panic
+from . import parser
+from . import TagFile
 
 class Namespace(dict):
 	def __init__(self, *args, **kwargs):
 		super(Namespace, self).__init__(*args, **kwargs)
 		self.__dict__ = self
-
-debug=print
-
 
 def path_split(path, stopwords=['delme', 'rules', 'sortme', 'working'], sep=os.path.sep, **kwargs):
 	path_parts = [ p for p in path.split(sep) if p not in ['', '.', '..'] ]
@@ -56,12 +55,13 @@ def path_detag(arg, tagfile='.tags', move=shutil.move, dest='tagged', **kwargs):
 		tf = TagFile.TagFile(os.path.join(my_dest, tagfile))
 	if not isdir(my_dest):
 		os.makedirs(my_dest)
-	debug('Moving {} to {}'.format(arg, my_dest))
+	info('Moving {} to {}'.format(arg, my_dest))
 	tf.merge(newpath, tags)
 	return newpath, tagfile
 def walk(*args, **kwargs):
 	for arg in args:
 		assert not isinstance(arg, list)
+		assert os.path.isdir(arg)
 		for root, dirs, files in os.walk(arg):
 			src = os.path.relpath(root)
 			file_paths = [ os.path.join(src, f) for f in files ]
@@ -100,8 +100,8 @@ def chunk(*args, **kwargs):
 			if this_size: # last
 				yield this_size, this_vol
 	my_list = sorted(walk(*args, **kwargs), key=key)
-	if not volumesize:
-		my_size = sum(s for p, r, s, _ in my_list)
+	my_size = sum(s for p, r, s, _ in my_list)
+	if not volumesize or (my_size <= volumesize):
 		if my_size:
 			return [(my_size, [pairs for _, _, _, pairs in my_list])]
 		else:

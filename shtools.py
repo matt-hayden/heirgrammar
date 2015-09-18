@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import os, os.path
+import sys
 
-import parser, tools
+from . import debug, info, warning, error, panic
+from . import tools
 
 def _move(src, dest):
 	assert os.path.isdir(src)
@@ -59,17 +61,11 @@ if __name__ == '__main__':
 	from glob import glob
 	import sys
 
-	try:
-		fdthree = os.fdopen(3, 'w')
-		def shout(*args, **kwargs):
-			kwargs['file'] = fdthree
-			print(*args, **kwargs)
-	except OSError as e: # fd 3 not available
-		shout=print
-
 	parser.setup(glob('rules/*.rules'))
-	ha = hier_arrange(*sys.argv[1:])
+	ha = list(hier_arrange(*sys.argv[1:]))
 	if ha:
-		shout('#!/bin/bash')
+		print("# Resulting script:")
 		for line in ha:
-			shout(line)
+			print(line)
+	else:
+		warning("No results for {}".format(' '.join(sys.argv)))

@@ -2,10 +2,10 @@
 import os, os.path
 import re
 
-from Taxon import *
+from . import debug, info, warning, error, panic
 
-def debug(*args):
-	pass
+from .Taxon import *
+
 
 def define_tags(lines, direction=-1, init='''import string\nprint("# yee-haw!")''', **kwargs):
 	"""This is the major setup function for the module."""

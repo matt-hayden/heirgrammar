@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
-
 import os, os.path
 from os.path import exists, isfile, isdir
 import random
-
-debug=print
 
 class TagFile:
 	def __init__(self, pathorfile):
