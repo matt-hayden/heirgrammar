@@ -105,7 +105,7 @@ def chunk(*args, **kwargs):
 		if my_size:
 			return [(my_size, [pairs for _, _, _, pairs in my_list])]
 		else:
-			return None
+			return []
 	return list(chunker(my_list))
 #
 if __name__ == '__main__':

@@ -19,6 +19,8 @@ def _move(src, dest):
 '''.format(**locals())
 	return syntax
 def hier_arrange(*args, prefix='', init='', **kwargs):
+	if not args:
+		args = ('.',)
 	if args == ('.',):
 		fargs = ''
 	else:
@@ -27,8 +29,10 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 	if not chunks:
 		raise StopIteration
 	if prefix:
-		if '{}' not in prefix:
-			prefix += '{}'
+		if '{' not in prefix:
+			if '}' not in prefix:
+				prefix += '{}'
+			else: raise ValueError("Poorly-formed prefix string {prefix}".format(**locals()) )
 		if not prefix.endswith(os.path.sep):
 			prefix += os.path.sep
 	if init:
@@ -48,10 +52,16 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 		yield '''$FIND {fargs} \( -name .DS_Store -o -iname Thumbs.DB -o -empty \) -delete'''.format(**locals())
 		yield '''$FIND {fargs} -empty -delete'''.format(**locals())
 	for n, (size, pairs) in enumerate(chunks, start=1):
-		for src, dest in pairs:
-			if prefix:
+		if prefix:
+			yield ''
+			yield '''### Volume {n}: {size:,} bytes'''.format(**locals())
+			yield ''
+			for src, dest in pairs:
 				dest = prefix.format(n)+dest
-			yield _move(src, dest)
+				yield _move(src, dest)
+		else:
+			for src, dest in pairs:
+				yield _move(src, dest)
 	if not init:
 		yield ''
 		yield '''$FIND {fargs} -empty -delete'''.format(**locals())

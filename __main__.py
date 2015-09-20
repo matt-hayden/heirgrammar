@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Apply rules to rename directories
+"""Apply rules to rename directories. Note that already-sorted directories are ignored, which is maybe not what you expect for the volume-splitting functions
   Usage:
     Sorter du [options] [--] [PATHS]...
     Sorter print [options] [--] [PATHS]...
@@ -30,6 +30,12 @@ def main(arguments=docopt.docopt(__doc__, version=__version__)):
 		setup([r]) # TODO: r ought to be a list already
 	else:
 		setup()
+	if arguments['--exclude']:
+		stopwords = [ s.strip() for s in arguments.pop('--exclude').split(',') ]
+	else:
+		stopwords = [ 'delme', 'sortme', 'working' ]
+	if 'rules' not in stopwords:
+		stopwords += ['rules']
 
 	print(arguments)
 
@@ -41,10 +47,12 @@ def main(arguments=docopt.docopt(__doc__, version=__version__)):
 			arrange_dirs(*arguments['PATHS'],
 						 volumesize=vs,
 						 prefix=arguments.pop('--prefix'),
-						 fileout=arguments.pop('--output', None) )
+						 fileout=arguments.pop('--output', None),
+						 stopwords=stopwords )
 		else:
 			arrange_dirs(*arguments['PATHS'],
-						 fileout=arguments.pop('--output', None) )
+						 fileout=arguments.pop('--output', None),
+						 stopwords=stopwords )
 	elif arguments['test']:
 		print(parser.split(arguments['EXPR'].split(',') ) )
 

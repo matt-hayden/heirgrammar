@@ -61,7 +61,7 @@ def convert(iterable, negations=None):
 """
 	items = []
 	negations = negations or []
-	a = items.append
+	#a = items.append # delme
 	def extend(list_of_tags, item):
 		"""Relies heavily on members added during runtime.
 		"""
@@ -71,22 +71,28 @@ def convert(iterable, negations=None):
 					return list_of_tags
 			if hasattr(item, 'removes'):
 				negations.extend(item.removes)
+			#if hasattr(item, 'fallback'): # TODO: causes weird error at items.append(item)
+			#	items = item.fallback+items
 			if hasattr(item, 'prepends'):
 				for p in item.prepends:
-					a(p)
+					items.append(p)
 					list_of_tags = pack(list_of_tags)
-			a(item)
+			items.append(item)
 			list_of_tags = pack(list_of_tags)
 			if hasattr(item, 'appends'):
 				items.extend(item.appends)
 		elif (item in Taxonomy):
 			extend(list_of_tags, tag(item))
 		else:
-			a(item)
+			items.append(item)
 		return pack(list_of_tags)
 	for field, literal in enumerate(iterable):
 		if literal in Taxonomy:
 			extend(items, literal)
+			#if literal == tag(None):
+			#	items = []
+			#else:
+			#	extend(items, literal)
 			continue
 		else:
 			token = name_cleaner(literal)
@@ -139,7 +145,7 @@ def _read(*args, delim=re.compile('\n[ \t]*\n')):
 			yield from delim.split(fi.read())
 def setup(arg, **kwargs):
 	if not arg:
-		Taxonomy = {'NULL': {'id': 0, 'name': None }}
+		Taxonomy = {None: {'id': 0, 'name': None }}
 		return
 	elif isinstance(arg, str): # single filename
 		return setup([arg], **kwargs)
