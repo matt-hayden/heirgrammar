@@ -69,6 +69,21 @@ def walk(*args, **kwargs):
 				debug("Skipping "+src)
 				continue
 			pri, rank, newpath = path_arrange(src, **kwargs)
+			with suppress(FileNotFoundError):
+				stat_by_file = [ (f, os.stat(f) ) for f in file_paths ]
+			file_size = sum(s.st_size for (f, s) in stat_by_file)
+			yield pri, rank, file_size, (src, newpath)
+def walk_renames(*args, **kwargs):
+	for arg in args:
+		assert not isinstance(arg, list)
+		assert os.path.isdir(arg)
+		for root, dirs, files in os.walk(arg):
+			src = os.path.relpath(root)
+			file_paths = [ os.path.join(src, f) for f in files ]
+			if (not files) or (src in ['.', '..', '']):
+				debug("Skipping "+src)
+				continue
+			pri, rank, newpath = path_arrange(src, **kwargs)
 			if src == os.path.relpath(newpath):
 				debug("Doing nothing: "+src)
 				continue
@@ -76,30 +91,38 @@ def walk(*args, **kwargs):
 				stat_by_file = [ (f, os.stat(f) ) for f in file_paths ]
 			file_size = sum(s.st_size for (f, s) in stat_by_file)
 			yield pri, rank, file_size, (src, newpath)
+def _chunker(my_list, volumesize, this_size=0, this_vol=[]):
+	for p, r, s, (src, dest) in my_list:
+		assert s < volumesize
+		if volumesize < this_size+s:
+			yield this_size, this_vol
+			this_size, this_vol = s, [ (src, dest) ]
+		else:
+			this_size += s
+			this_vol.append( (src, dest) )
+	if this_size: # last
+		yield this_size, this_vol
 def chunk(*args, **kwargs):
 	volumesize = kwargs.pop('volumesize', 0)
-	if kwargs.pop('pri', False):
-		def key(arg):
-			p, r, s, _ = arg
-			return -p, r, -s
-	else:
-		def key(arg):
-			p, r, s, _ = arg
-			return r, -s
-	chunker = kwargs.pop('chunker', None)
-	if not chunker:
-		def chunker(my_list, this_size=0, this_vol=[]):
-			for p, r, s, (src, dest) in my_list:
-				assert s < volumesize
-				if volumesize < this_size+s:
-					yield this_size, this_vol
-					this_size, this_vol = s, [ (src, dest) ]
-				else:
-					this_size += s
-					this_vol.append( (src, dest) )
-			if this_size: # last
-				yield this_size, this_vol
+	def key(arg): # different than below
+		p, r, s, _ = arg
+		return -p, r, -s
+	chunker = kwargs.pop('chunker', _chunker)
 	my_list = sorted(walk(*args, **kwargs), key=key)
+	my_size = sum(s for p, r, s, _ in my_list)
+	if not volumesize or (my_size <= volumesize):
+		if my_size:
+			return [(my_size, [pairs for _, _, _, pairs in my_list])]
+		else:
+			return []
+	return list(chunker(my_list, volumesize))
+def chunk_renames(*args, **kwargs):
+	volumesize = kwargs.pop('volumesize', 0)
+	def key(arg): # different than above
+		p, r, s, _ = arg
+		return r, -s
+	chunker = kwargs.pop('chunker', _chunker)
+	my_list = sorted(walk_renames(*args, **kwargs), key=key)
 	my_size = sum(s for p, r, s, _ in my_list)
 	if not volumesize or (my_size <= volumesize):
 		if my_size:

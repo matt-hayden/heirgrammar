@@ -25,7 +25,10 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 		fargs = ''
 	else:
 		fargs = ' '.join("'{}'".format(a) for a in args) # see quote assert above
-	chunks = tools.chunk(*args, **kwargs)
+	if 'volumesize' in kwargs:
+		chunks = tools.chunk(*args, **kwargs)
+	else:
+		chunks = tools.chunk_renames(*args, **kwargs)
 	if not chunks:
 		raise StopIteration
 	if prefix:

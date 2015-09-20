@@ -11,7 +11,7 @@
     --version  show version and exit
     -x, --exclude=PATTERNS...  [default: delme sortme]
     -o, --output=FILE  Some output is more useful when directed at a file
-    -p, --prefix=TEXT  When directories reach --volumesize, then they will begin based on this pattern [default: prefix_{:03d}]
+    -p, --prefix=TEXT  When directories reach --volumesize, then they will begin based on this pattern [default: vol_{:03d}]
     -r RULES_FILES..., --rules=RULES_FILES...
     -V, --volumesize=INT  assume directories of INT bytes are preferred [try: 24411.5E6]
 
