@@ -61,7 +61,8 @@ def path_detag(arg, tagfile='.tags', move=shutil.move, dest='tagged', **kwargs):
 def walk(*args, **kwargs):
 	for arg in args:
 		assert not isinstance(arg, list)
-		assert os.path.isdir(arg)
+		if not os.path.isdir(arg):
+			raise ValueError("'{}' not a directory".format(arg))
 		for root, dirs, files in os.walk(arg):
 			src = os.path.relpath(root)
 			file_paths = [ os.path.join(src, f) for f in files ]

@@ -37,7 +37,7 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 				prefix += '{}'
 		except:
 			raise ValueError("Poorly-formed prefix string {}".format(prefix))
-		if not os.path.sep not in prefix:
+		if os.path.sep not in prefix:
 			prefix += os.path.sep
 	if init:
 		yield ''

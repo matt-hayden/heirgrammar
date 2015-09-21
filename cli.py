@@ -54,7 +54,7 @@ def main(args, **kwargs):
 	elif kwargs['sort']:
 		if kwargs['--volumesize']:
 			vs = int(float(kwargs.pop('--volumesize')))
-			arrange_dirs(*kwargs,
+			arrange_dirs(*args,
 						 volumesize=vs,
 						 prefix=kwargs.pop('--prefix'),
 						 fileout=kwargs.pop('--output', None),
