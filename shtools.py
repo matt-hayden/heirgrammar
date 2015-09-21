@@ -32,11 +32,12 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 	if not chunks:
 		raise StopIteration
 	if prefix:
-		if '{' not in prefix:
-			if '}' not in prefix:
+		try:
+			if prefix.format(0) == prefix:
 				prefix += '{}'
-			else: raise ValueError("Poorly-formed prefix string {prefix}".format(**locals()) )
-		if not prefix.endswith(os.path.sep):
+		except:
+			raise ValueError("Poorly-formed prefix string {}".format(prefix))
+		if not os.path.sep not in prefix:
 			prefix += os.path.sep
 	if init:
 		yield ''
