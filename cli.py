@@ -5,6 +5,8 @@ import sys
 
 from . import *
 
+from .pager import pager # ought to be an external module
+
 def setup(args=[ 'rules', '.rules', '../rules', '../.rules' ], **kwargs):
 	assert args
 	debug("Searching for rules in {}".format(args))
@@ -47,7 +49,8 @@ def main(args, **kwargs):
 	assert 'rules' in stopwords # TODO
 
 	if kwargs['print']:
-		return parser.print_Taxonomy()
+		with pager():
+			return parser.print_Taxonomy()
 	elif kwargs['sort']:
 		if kwargs['--volumesize']:
 			vs = int(float(kwargs.pop('--volumesize')))
