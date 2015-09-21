@@ -22,39 +22,35 @@ from . import __version__
 from .cli import *
 from .parser import print_Taxonomy
 
-def main(arguments=docopt.docopt(__doc__, version=__version__)):
-	print(arguments)
-
-	if arguments['--rules']:
-		r=arguments.pop('--rules')
+def main(args=docopt.docopt(__doc__, version=__version__)):
+	if args['--rules']:
+		r=args.pop('--rules')
 		setup([r]) # TODO: r ought to be a list already
 	else:
 		setup()
-	if arguments['--exclude']:
-		stopwords = [ s.strip() for s in arguments.pop('--exclude').split(',') ]
+	if args['--exclude']:
+		stopwords = [ s.strip() for s in args.pop('--exclude').split(',') ]
 	else:
 		stopwords = [ 'delme', 'sortme', 'working' ]
 	if 'rules' not in stopwords:
-		stopwords += ['rules']
+		stopwords.append('rules')
 
-	print(arguments)
-
-	if arguments['print']:
+	if args['print']:
 		return print_Taxonomy()
-	elif arguments['sort']:
-		if arguments['--volumesize']:
-			vs = int(float(arguments.pop('--volumesize')))
-			arrange_dirs(*arguments['PATHS'],
+	elif args['sort']:
+		if args['--volumesize']:
+			vs = int(float(args.pop('--volumesize')))
+			arrange_dirs(*args['PATHS'],
 						 volumesize=vs,
-						 prefix=arguments.pop('--prefix'),
-						 fileout=arguments.pop('--output', None),
+						 prefix=args.pop('--prefix'),
+						 fileout=args.pop('--output', None),
 						 stopwords=stopwords )
 		else:
-			arrange_dirs(*arguments['PATHS'],
-						 fileout=arguments.pop('--output', None),
+			arrange_dirs(*args['PATHS'],
+						 fileout=args.pop('--output', None),
 						 stopwords=stopwords )
-	elif arguments['test']:
-		print(parser.split(arguments['EXPR'].split(',') ) )
+	elif args['test']:
+		print(parser.split(args['EXPR'].split(',') ) )
 
 import sys
 sys.exit(main())
