@@ -10,7 +10,8 @@ from .Taxon import *
 def define_tags(lines, direction=-1, init='''import string\nprint("# yee-haw!")''', **kwargs):
 	"""This is the major setup function for the module."""
 	# customize here:
-	w, highest_pri = direction, len(lines)
+	highest_pri = len(lines)
+	w = direction << highest_pri
 	#
 	my_globals = { 'Taxonomy': Taxonomy, 'tag': tag }
 	exec(init, my_globals)
@@ -35,7 +36,7 @@ def define_tags(lines, direction=-1, init='''import string\nprint("# yee-haw!")'
 						t = tag(token)
 					t.update(params)
 		# customize here:
-		w <<= 1
+		w >>= 1
 		#
 #
 def pack(list_of_tags):
@@ -160,10 +161,10 @@ def print_Taxonomy(header="lno "+"rank".rjust(25)+" -pri- count label"):
 		"""
 		name, members = args
 		if 'rank' in members:
-			return -members['rank'], name
+			return members['rank'], name
 		else:
 			return 0, name
-		#return 'isolate' in members, -members.get('pri', 0), -members.get('rank', 0), name
+		#return 'isolate' in members, members.get('pri', 0), -members.get('rank', 0), name
 	if header:
 		print(header)
 		print("="*len(header))

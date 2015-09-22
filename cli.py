@@ -64,6 +64,17 @@ def main(args, **kwargs):
 						 fileout=kwargs.pop('--output', None),
 						 stopwords=stopwords )
 	elif kwargs['test']:
-		print(parser.split(kwargs['EXPR'].split(',') ) )
+		testme = kwargs['EXPR']
+		if os.path.sep in testme:
+			sep=os.path.sep
+		else:
+			sep=','
+		tags, nontags = parser.split(testme.split(sep) )
+		print("{}, {}".format(testme, nontags))
+		print()
+		for t in tags:
+			print(t, t.rank, t.pri)
+		print("Total rank masks = {:d}".format(sum(t.rank for t in tags)) )
+		print()
 	return 0
 
