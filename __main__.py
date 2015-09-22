@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Apply rules to rename directories. Note that already-sorted directories are ignored, which is maybe not what you expect for the volume-splitting functions
   Usage:
+    Sorter dirsplit [options] [--] [PATHS]...
     Sorter du [options] [--] [PATHS]...
     Sorter print [options] [--] [PATHS]...
     Sorter sort [options] [--] [PATHS]...
-    Sorter test [options] [--] EXPR
+    Sorter test [options] [--] EXPR...
 
   Options:
     -h --help  show this help message and exit
@@ -24,4 +25,4 @@ from . import *
 from .cli import main
 
 args = docopt.docopt(__doc__, version=__version__) # make sure to pop 'PATHS' out as file arguments
-sys.exit(main(args.pop('PATHS'), **args))
+sys.exit(main(*args.pop('PATHS'), **args))

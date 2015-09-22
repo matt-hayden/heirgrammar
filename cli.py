@@ -40,7 +40,7 @@ def arrange_dirs(*args, **kwargs):
 		for line in _get_lines(*args, **kwargs):
 			print(line)
 #
-def main(args, **kwargs):
+def main(*args, **kwargs):
 	rules_dirs = kwargs.pop('--rules').split(',')
 	setup(rules_dirs)
 
@@ -51,30 +51,31 @@ def main(args, **kwargs):
 	if kwargs['print']:
 		with pager():
 			return parser.print_Taxonomy()
+	elif kwargs['dirsplit']:
+		try:
+			vs = int(float(kwargs['--volumesize']))
+			assert 0 < vs
+		except:
+			raise ValueError("Invalid volume size: {}".format(kwargs['--volumesize']))
+		arrange_dirs(*args,
+					 volumesize=vs,
+					 prefix=kwargs.pop('--prefix'),
+					 fileout=kwargs.pop('--output', None),
+					 stopwords=stopwords )
 	elif kwargs['sort']:
-		if kwargs['--volumesize']:
-			vs = int(float(kwargs.pop('--volumesize')))
-			arrange_dirs(*args,
-						 volumesize=vs,
-						 prefix=kwargs.pop('--prefix'),
-						 fileout=kwargs.pop('--output', None),
-						 stopwords=stopwords )
-		else:
-			arrange_dirs(*args,
-						 fileout=kwargs.pop('--output', None),
-						 stopwords=stopwords )
+		arrange_dirs(*args,
+					 fileout=kwargs.pop('--output', None),
+					 stopwords=stopwords )
 	elif kwargs['test']:
-		testme = kwargs['EXPR']
-		if os.path.sep in testme:
-			sep=os.path.sep
-		else:
-			sep=','
-		tags, nontags = parser.split(testme.split(sep) )
-		print("{}, {}".format(testme, nontags))
-		print()
-		for t in tags:
-			print(t, t.rank, t.pri)
-		print("Total rank masks = {:d}".format(sum(t.rank for t in tags)) )
+		for teststring in kwargs.pop('EXPR'):
+			sep = os.path.sep
+			tags, nontags = parser.split(teststring.replace(',', sep).split(sep) )
+			print()
+			print("{} => {}".format(teststring, nontags))
+			for t in tags:
+				print("{!r:>30} {: 15d} {:03d}".format(t, t.rank, t.pri) )
+			print("{:>30} {: 15d} {:03d}".format('total', sum(t.rank for t in tags), max(t.pri for t in tags)) )
+			print()
 		print()
 	return 0
 

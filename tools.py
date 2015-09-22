@@ -13,7 +13,7 @@ class Namespace(dict):
 		super(Namespace, self).__init__(*args, **kwargs)
 		self.__dict__ = self
 
-def path_split(path, stopwords=['delme', 'rules', 'sortme', 'working'], sep=os.path.sep, **kwargs):
+def path_split(path, stopwords=['delme', 'rules', 'sortme', 'working'], sep=os.path.sep):
 	path_parts = [ p for p in path.split(sep) if p not in ['', '.', '..'] ]
 	parts = []
 	a = parts.append
@@ -30,7 +30,7 @@ def path_split(path, stopwords=['delme', 'rules', 'sortme', 'working'], sep=os.p
 	#if any(w in parts for w in stopwords):
 	if set(stopwords) & set(parts):
 		return [], path
-	tags, s = parser.split(parts, **kwargs)
+	tags, s = parser.split(parts)
 	return tags, sep.join(str(p) for p in s)
 def path_arrange(*args, **kwargs):
 	sep = kwargs.get('sep', os.path.sep)
@@ -61,41 +61,29 @@ def path_detag(arg, tagfile='.tags', move=shutil.move, dest='tagged', **kwargs):
 def walk(*args, **kwargs):
 	for arg in args:
 		assert not isinstance(arg, list)
-		if not os.path.isdir(arg):
-			raise ValueError("'{}' not a directory".format(arg))
-		for root, dirs, files in os.walk(arg):
-			src = os.path.relpath(root)
-			file_paths = [ os.path.join(src, f) for f in files ]
-			if (not files) or (src in ['.', '..', '']):
-				debug("Skipping "+src)
-				continue
-			pri, rank, newpath = path_arrange(src, **kwargs)
-			with suppress(FileNotFoundError):
-				stat_by_file = [ (f, os.stat(f) ) for f in file_paths ]
-			file_size = sum(s.st_size for (f, s) in stat_by_file)
-			yield pri, rank, file_size, (src, newpath)
-def walk_renames(*args, **kwargs):
-	for arg in args:
-		assert not isinstance(arg, list)
 		assert os.path.isdir(arg)
 		for root, dirs, files in os.walk(arg):
 			src = os.path.relpath(root)
-			file_paths = [ os.path.join(src, f) for f in files ]
 			if (not files) or (src in ['.', '..', '']):
 				debug("Skipping "+src)
 				continue
+			else:
+				file_paths = [ os.path.join(src, f) for f in files ]
+				with suppress(FileNotFoundError):
+					stat_by_file = [ (f, os.stat(f) ) for f in file_paths ]
+				file_size = sum(s.st_size for (f, s) in stat_by_file)
 			pri, rank, newpath = path_arrange(src, **kwargs)
-			if src == os.path.relpath(newpath):
-				debug("Doing nothing: "+src)
-				continue
-			with suppress(FileNotFoundError):
-				stat_by_file = [ (f, os.stat(f) ) for f in file_paths ]
-			file_size = sum(s.st_size for (f, s) in stat_by_file)
-			yield pri, rank, file_size, (src, newpath)
-def _chunker(my_list, volumesize, this_size=0, this_vol=[]):
-	for p, r, s, (src, dest) in my_list:
-		assert s < volumesize
-		if volumesize < this_size+s:
+			yield pri, rank, file_size, (src, None if (src==os.path.relpath(newpath)) else newpath)
+def _chunker(rows, volumesize, this_size=0, this_vol=[]):
+	assert volumesize
+	errors = []
+	e = errors.append
+	for row in rows:
+		p, r, s, (src, dest) = row
+		if (volumesize < s):
+			e(row)
+			continue
+		elif volumesize < this_size+s:
 			yield this_size, this_vol
 			this_size, this_vol = s, [ (src, dest) ]
 		else:
@@ -103,34 +91,40 @@ def _chunker(my_list, volumesize, this_size=0, this_vol=[]):
 			this_vol.append( (src, dest) )
 	if this_size: # last
 		yield this_size, this_vol
-def chunk(*args, **kwargs):
+	if errors:
+		max_size = max(s for _, _, s, _ in errors)
+		error("{} file(s) too big for {:,} byte volume, "
+			  "consider volumes of at least {:,}".format(len(errors), volumesize, max_size) )
+		for row in errors:
+			p, r, s, (src, dest) = row
+			info("File '{}' too big for {:,} byte volume".format(src, volumesize) )
+def chunk(*args, chunker=_chunker, **kwargs):
 	volumesize = kwargs.pop('volumesize', 0)
-	def key(arg): # different than below
-		p, r, s, _ = arg
-		return -p, r, -s
-	chunker = kwargs.pop('chunker', _chunker)
+	if kwargs.pop('by_priority', True):
+		debug("Sort order: priority, rank, size")
+		def key(arg):
+			p, r, s, _ = arg
+			return -p, r, -s
+	else:
+		debug("Sort order: rank, size")
+		def key(arg):
+			p, r, s, _ = arg
+			return r, -s
 	my_list = sorted(walk(*args, **kwargs), key=key)
-	my_size = sum(s for p, r, s, _ in my_list)
-	if not volumesize or (my_size <= volumesize):
-		if my_size:
-			return [(my_size, [pairs for _, _, _, pairs in my_list])]
+	if not volumesize:
+		osize = len(my_list)
+		my_list = [ (p, r, s, (src, dest)) for (p, r, s, (src, dest)) in my_list if dest ]
+		debug("{} directories unchanged".format(osize-len(my_list)) )
+	total_size = sum(s for _, _, s, _ in my_list)
+	if not total_size:
+		return []
+	if not volumesize or (total_size <= volumesize):
+		if total_size:
+			return [(total_size, [pairs for _, _, _, pairs in my_list])]
 		else:
 			return []
-	return list(chunker(my_list, volumesize))
-def chunk_renames(*args, **kwargs):
-	volumesize = kwargs.pop('volumesize', 0)
-	def key(arg): # different than above
-		p, r, s, _ = arg
-		return r, -s
-	chunker = kwargs.pop('chunker', _chunker)
-	my_list = sorted(walk_renames(*args, **kwargs), key=key)
-	my_size = sum(s for p, r, s, _ in my_list)
-	if not volumesize or (my_size <= volumesize):
-		if my_size:
-			return [(my_size, [pairs for _, _, _, pairs in my_list])]
-		else:
-			return []
-	return list(chunker(my_list))
+	else:
+		return list(chunker(my_list, volumesize))
 #
 if __name__ == '__main__':
 	from glob import glob

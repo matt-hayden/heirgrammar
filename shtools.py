@@ -25,10 +25,7 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 		fargs = ''
 	else:
 		fargs = ' '.join("'{}'".format(a) for a in args) # see quote assert above
-	if 'volumesize' in kwargs:
-		chunks = tools.chunk(*args, **kwargs)
-	else:
-		chunks = tools.chunk_renames(*args, **kwargs)
+	chunks = tools.chunk(*args, **kwargs) # returns a list of (size, (src, dest)) with dest=None for no change
 	if not chunks:
 		raise StopIteration
 	if prefix:
@@ -61,10 +58,11 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 			yield '''### Volume {n}: {size:,} bytes'''.format(**locals())
 			yield ''
 			for src, dest in pairs:
-				dest = prefix.format(n)+dest
+				dest = prefix.format(n)+dest if dest else prefix.format(n)+src
 				yield _move(src, dest)
 		else:
 			for src, dest in pairs:
+				assert dest
 				yield _move(src, dest)
 	if not init:
 		yield ''

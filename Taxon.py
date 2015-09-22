@@ -31,8 +31,8 @@ if not 'lookup_table' in globals():
 # customize here if using special characters on the ends of tags::
 def name_cleaner(text):
 	text = text.strip('+_')
-	if ' ' in text:
-		text = text.replace(' ', '_')
+	for vc in ''' '"''':
+		text = text.replace(vc, '_')
 	return text
 #
 #

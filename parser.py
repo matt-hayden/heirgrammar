@@ -115,7 +115,9 @@ def convert(iterable, negations=None):
 		except:
 			debug("Failed to remove {}".format(n))
 	return pack(items)
-def split(iterable, key=lambda t: -t.rank, **kwargs):
+def split(iterable, **kwargs):
+	def key(t):
+		return t.rank
 	cts = convert(iterable, **kwargs)
 	tags, nontags = [], []
 	for item in cts:
