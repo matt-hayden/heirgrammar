@@ -38,27 +38,30 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 		if os.path.sep not in prefix:
 			prefix += os.path.sep
 	if init:
-		yield ''
 		yield init
-		yield ''
 	else:	
+		yield '''#!/bin/bash
+set -e
+'''
 		if sys.platform.startswith('darwin'):
-			yield '''MV="gmv -nt"'''
-			yield '''FIND=gfind'''
+			yield '''MV="gmv -nt"
+FIND=gfind
+'''
 		#elif sys.platform.startswith('win32'): # ...
 		else:
-			yield '''MV="mv -nv"'''
-			yield '''FIND=find'''
-		yield ''
-		yield '''# {} volumes'''.format(len(chunks))
-		yield ''
-		yield '''$FIND {fargs} \( -name .DS_Store -o -iname Thumbs.DB -o -empty \) -delete'''.format(**locals())
-		yield '''$FIND {fargs} -empty -delete'''.format(**locals())
+			yield '''MV="mv -nv"
+FIND=find
+
+# {} volumes
+'''.format(len(chunks))
+		yield '''$FIND {fargs} \( -name .DS_Store -o -iname Thumbs.DB -o -empty \) -delete
+$FIND {fargs} -empty -delete
+'''.format(**locals())
 	for n, (size, pairs) in enumerate(chunks, start=1):
 		if prefix:
-			yield ''
-			yield '''### Volume {n}: {size:,} bytes'''.format(**locals())
-			yield ''
+			yield '''
+### Volume {n}: {size:,} bytes
+'''.format(**locals())
 			for src, dest in pairs:
 				dest = prefix.format(n)+dest if dest else prefix.format(n)+src
 				yield _move(src, dest)
@@ -67,9 +70,9 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 				assert dest
 				yield _move(src, dest)
 	if not init:
-		yield ''
-		yield '''$FIND {fargs} -empty -delete'''.format(**locals())
-		yield ''
+		yield '''
+$FIND {fargs} -empty -delete
+'''.format(**locals())
 
 if __name__ == '__main__':
 	from glob import glob
