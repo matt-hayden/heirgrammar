@@ -9,6 +9,8 @@ from .pager import pager # ought to be an external module
 
 def setup(args=[ 'rules', '.rules', '../rules', '../.rules' ], **kwargs):
 	assert args
+	if isinstance(args, str):
+		return setup([args], **kwargs)
 	debug("Searching for rules in {}".format(args))
 	for searchme in args:
 		if os.path.isdir(searchme):
@@ -61,11 +63,13 @@ def main(*args, **kwargs):
 					 volumesize=vs,
 					 prefix=kwargs.pop('--prefix'),
 					 fileout=kwargs.pop('--output', None),
-					 stopwords=stopwords )
+					 stopwords=stopwords,
+					 all_commas=kwargs.pop('--all-commas'))
 	elif kwargs['sort']:
 		arrange_dirs(*args,
 					 fileout=kwargs.pop('--output', None),
-					 stopwords=stopwords )
+					 stopwords=stopwords,
+					 all_commas=kwargs.pop('--all-commas') )
 	elif kwargs['test']:
 		for teststring in kwargs.pop('EXPR'):
 			sep = os.path.sep

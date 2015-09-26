@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os, os.path
+import shlex
 import sys
 
 from . import debug, info, warning, error, panic
@@ -7,15 +8,15 @@ from . import tools
 
 def _move(src, dest):
 	assert os.path.isdir(src)
-	if "'" in src or "'" in dest:
-		return '# TODO: {} -> {}'.format(src, dest)
 	if os.path.exists(dest):
 		assert os.path.isdir(dest)
 	if os.path.relpath(src) == os.path.relpath(dest):
 		return ''
-	syntax = '''# '{src}' -> '{dest}'
-[[ -d '{dest}' ]] || mkdir -p '{dest}'
-[[ -d '{src}' ]] && $MV -t '{dest}' '{src}'/*
+	shsrc = shlex.quote(src)
+	shdest = shlex.quote(dest)
+	syntax = '''# {shsrc} -> {shdest}
+[[ -d {shdest} ]] || mkdir -p {shdest}
+[[ -d {shsrc} ]] && $MV -t {shdest} {shsrc}/*
 '''.format(**locals())
 	return syntax
 def hier_arrange(*args, prefix='', init='', **kwargs):
@@ -24,7 +25,7 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 	if args == ('.',):
 		fargs = ''
 	else:
-		fargs = ' '.join("'{}'".format(a) for a in args) # see quote assert above
+		fargs = ' '.join(shlex.quote(a) for a in args) # see quote assert above
 	chunks = tools.chunk(*args, **kwargs) # returns a list of (size, (src, dest)) with dest=None for no change
 	if not chunks:
 		raise StopIteration
@@ -49,6 +50,7 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 			yield '''MV="mv -nv"'''
 			yield '''FIND=find'''
 		yield ''
+		yield '''# {} volumes'''.format(len(chunks))
 		yield ''
 		yield '''$FIND {fargs} \( -name .DS_Store -o -iname Thumbs.DB -o -empty \) -delete'''.format(**locals())
 		yield '''$FIND {fargs} -empty -delete'''.format(**locals())

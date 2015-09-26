@@ -13,7 +13,7 @@ class Namespace(dict):
 		super(Namespace, self).__init__(*args, **kwargs)
 		self.__dict__ = self
 
-def path_split(path, stopwords=['delme', 'rules', 'sortme', 'working'], sep=os.path.sep):
+def path_split(path, stopwords=['delme', 'rules', 'sortme', 'working'], sep=os.path.sep, all_commas=False):
 	path_parts = [ p for p in path.split(sep) if p not in ['', '.', '..'] ]
 	parts = []
 	a = parts.append
@@ -21,7 +21,7 @@ def path_split(path, stopwords=['delme', 'rules', 'sortme', 'working'], sep=os.p
 		if ',' in p:
 			sub_parts = p.split(',')
 			tags, nontags = parser.split(sub_parts)
-			if nontags:
+			if nontags and not all_commas:
 				a(p)
 			else:
 				parts.extend(sub_parts)
@@ -61,8 +61,11 @@ def path_detag(arg, tagfile='.tags', move=shutil.move, dest='tagged', **kwargs):
 def walk(*args, **kwargs):
 	for arg in args:
 		assert not isinstance(arg, list)
-		assert os.path.isdir(arg)
+		if not os.path.isdir(arg):
+			warning("Skipping "+arg)
 		for root, dirs, files in os.walk(arg):
+			dirs = [ d for d in dirs if not d.startswith('.') ] # prune out hidden directories
+			files = [ f for f in files if not f.startswith('.') ] # prune out hidden files
 			src = os.path.relpath(root)
 			if (not files) or (src in ['.', '..', '']):
 				debug("Skipping "+src)
