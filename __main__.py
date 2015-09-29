@@ -15,7 +15,7 @@
     -p, --prefix=TEXT  When directories reach --volumesize, then they will begin based on this pattern [default: vol_{:03d}]
     -r RULES_FILES..., --rules=RULES_FILES...  [default: rules,.rules,../rules,../.rules]
     -V, --volumesize=INT  assume directories of INT bytes are preferred [try: 24411.5E6]
-	--all-commas=BOOL  Split on all commas, rather than just commas that split tags [default: False]
+    --all-commas=BOOL  Split on all commas, rather than just commas that split tags [default: False]
 
 """
 import sys
