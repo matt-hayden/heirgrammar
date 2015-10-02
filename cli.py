@@ -29,17 +29,15 @@ def arrange_dirs(*args, fileout='', **kwargs):
 		if ha:
 			yield "#! /bin/bash"
 			yield from ha
-	#fileout = kwargs.pop('fileout')
 	if hasattr(fileout, 'write'):
 		debug("Writing to {}".format(fileout))
 		fileout.write(os.linesep.join(_get_lines(*args, **kwargs)))
-	elif isinstance(fileout, str):
-		debug("Writing to '{}'".format(fileout))
+	elif isinstance(fileout, (str, int)):
 		with open(fileout, 'w') as fo:
 			return arrange_dirs(*args, fileout=fo, **kwargs)
-			#fo.write(os.linesep.join(_get_lines(*args, **kwargs)))
 	else:
-		warning("'{}' invalid, writing to standard out".format(fileout))
+		if fileout:
+			warning("'{}' invalid, writing to standard out".format(fileout))
 		print('\n'.join(_get_lines(*args, **kwargs)) )
 #
 def test(arg, sep=os.path.sep):
@@ -74,6 +72,7 @@ def main(*args, **kwargs):
 
 	options['all_commas'] = kwargs.pop('--all-commas', None)
 	options['fileout'] = kwargs.pop('--output', None)
+	options['prefix'] = kwargs.pop('--prefix', None)
 
 	if kwargs['--prepend']:
 		try:
