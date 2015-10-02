@@ -6,7 +6,6 @@ import shutil
 
 from . import debug, info, warning, error, panic
 from . import parser
-from . import TagFile
 
 class Namespace(dict):
 	def __init__(self, *args, **kwargs):
@@ -15,6 +14,12 @@ class Namespace(dict):
 
 def path_split(path, stopwords=['delme', 'rules', 'sortme', 'working'], sep=os.path.sep, all_commas=False):
 	path_parts = [ p for p in path.split(sep) if p not in ['', '.', '..'] ]
+	try:
+		p, n = path_parts[0].rsplit('.', 1)
+		if n.isdigit():
+			path_parts[0] = p
+	except:
+		pass
 	parts = []
 	a = parts.append
 	for p in path_parts:
@@ -41,23 +46,6 @@ def path_arrange(*args, **kwargs):
 	else:
 		highest_pri = total_rank = 0
 	return highest_pri, total_rank, sep.join(str(t) for t in tags+[newpath])
-def path_detag(arg, tagfile='.tags', move=shutil.move, dest='tagged', **kwargs):
-	tags, newpath = path_split(arg, **kwargs)
-	if tags:
-		my_dest = os.path.join(dest, newpath)
-	else:
-		debug('Moving {} to {}'.format(arg, dest))
-		debug('Not entering {} into a tagfile'.format(arg))
-		return newpath, None
-	if newpath in ['.', '..', '']:
-		tf = TagFile.TagFile(os.path.join(dest, tagfile))
-	else:
-		tf = TagFile.TagFile(os.path.join(my_dest, tagfile))
-	if not isdir(my_dest):
-		os.makedirs(my_dest)
-	info('Moving {} to {}'.format(arg, my_dest))
-	tf.merge(newpath, tags)
-	return newpath, tagfile
 def walk(*args, **kwargs):
 	for arg in args:
 		assert not isinstance(arg, list)
