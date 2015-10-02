@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import collections
 import os, os.path
 import re
 
@@ -54,7 +55,7 @@ def pack(list_of_tags):
 				list_of_tags.remove(t)
 	return list_of_tags
 #
-def convert(iterable, negations=None):
+def convert(iterable, negations=None, prepend_tags=[], append_tags=[]):
 	"""
 >>> convert('red green blue banana APPLE nogreen purple red'.split())
 ['banana', 'APPLE', <purple>, <red>]
@@ -78,10 +79,20 @@ def convert(iterable, negations=None):
 				for p in item.prepends:
 					items.append(p)
 					list_of_tags = pack(list_of_tags)
+			if prepend_tags:
+				for p in prepend_tags:
+					items.append(p)
+					list_of_tags = pack(list_of_tags)
 			items.append(item)
 			list_of_tags = pack(list_of_tags)
 			if hasattr(item, 'appends'):
-				items.extend(item.appends)
+				for a in item.appends:
+					items.append(a)
+					list_of_tags = pack(list_of_tags)
+			if append_tags:
+				for a in append_tags:
+					items.append(a)
+					list_of_tags = pack(list_of_tags)
 		elif (item in Taxonomy):
 			extend(list_of_tags, tag(item))
 		else:
@@ -157,6 +168,11 @@ def setup(arg, **kwargs):
 	else:
 		raise NotImplemented
 	return arg
+def get_custom_attributes():
+	c = collections.Counter()
+	for name, attribs in Taxonomy.items():
+		c.update(attribs.keys())
+	return c.most_common()
 def print_Taxonomy(header="lno "+"rank".rjust(25)+" -pri- count label"):
 	def key(args):
 		"""Deals in the elements of Taxonomy.items()
@@ -180,6 +196,9 @@ def print_Taxonomy(header="lno "+"rank".rjust(25)+" -pri- count label"):
 			print("{:03d} {:25d} {:5.1f} {:5d} {}".format(n, r, p, nbr_count, tag(name) ))
 		except KeyError as e:
 			print(name, "unsortable:", e)
+	print()
+	for attrib, count in get_custom_attributes():
+		print(attrib, count)
 if __name__ == '__main__':
 	import doctest
 	from glob import glob

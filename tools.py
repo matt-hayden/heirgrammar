@@ -12,7 +12,7 @@ class Namespace(dict):
 		super(Namespace, self).__init__(*args, **kwargs)
 		self.__dict__ = self
 
-def path_split(path, stopwords=['delme', 'rules', 'sortme', 'working'], sep=os.path.sep, all_commas=False):
+def path_split(path, stopwords=['delme', 'rules', 'sortme', 'working'], sep=os.path.sep, all_commas=False, **kwargs):
 	path_parts = [ p for p in path.split(sep) if p not in ['', '.', '..'] ]
 	try:
 		p, n = path_parts[0].rsplit('.', 1)
@@ -35,7 +35,7 @@ def path_split(path, stopwords=['delme', 'rules', 'sortme', 'working'], sep=os.p
 	#if any(w in parts for w in stopwords):
 	if set(stopwords) & set(parts):
 		return [], path
-	tags, s = parser.split(parts)
+	tags, s = parser.split(parts, **kwargs)
 	return tags, sep.join(str(p) for p in s)
 def path_arrange(*args, **kwargs):
 	sep = kwargs.get('sep', os.path.sep)

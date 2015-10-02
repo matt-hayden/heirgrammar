@@ -29,6 +29,7 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 	chunks = tools.chunk(*args, **kwargs) # returns a list of (size, (src, dest)) with dest=None for no change
 	if not chunks:
 		raise StopIteration
+	total_size = sum(s for s, _ in chunks)
 	if prefix:
 		try:
 			if prefix.format(0) == prefix:
@@ -52,8 +53,8 @@ FIND=gfind
 			yield '''MV="mv -nv"
 FIND=find
 
-# {} volumes
-'''.format(len(chunks))
+# {:.1f} MB in {} volumes
+'''.format(total_size/10E6, len(chunks))
 		yield '''$FIND {fargs} \( -name .DS_Store -o -iname Thumbs.DB -o -empty \) -delete
 $FIND {fargs} -empty -delete
 '''.format(**locals())
