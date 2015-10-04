@@ -8,13 +8,12 @@ import os, os.path
 from . import debug, info, warning, error, panic
 from . import parser
 
-#bad_chars = ''' '{}[]()*&?<>#!".'''
-def get_common_prefix(strings):
-	lengths = [ len(s) for s in strings ]
+def get_common_prefix(*args):
+	lengths = [ len(s) for s in args ]
 	shortest, longest = min(lengths), max(lengths)
 	p = ''
 	for i in range(shortest):
-		t = set(s[i] for s in strings)
+		t = set(s[i] for s in args)
 		if len(t) == 1:
 			p += t.pop()
 		else:
@@ -24,8 +23,11 @@ def get_common_prefix(strings):
 def parse_tagfile(filename):
 	with open(filename) as fi:
 		tags = json.load(fi)
-	common = tags.pop('*', [])
-	common_tags, common_nontags = parser.split(common)
+	if '*' in tags:
+		common = parser.convert(tags.pop('*'))
 	for k, v in tags.items():
-		my_tags, my_nontags = parser.split(v)
-		yield k, (parser.combine(common_tags, my_tags), common_nontags+my_nontags)
+		ts = parser.convert(v)
+		if common:
+			yield k, parser.combine(common, ts)
+		else:
+			yield k, ts

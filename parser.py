@@ -55,25 +55,25 @@ def pack(list_of_tags):
 			if (r == t.rank):
 				list_of_tags.remove(t)
 	return list_of_tags
-def combine(*lists_of_tags):
-	result = list_of_tags.pop(0)
-	if not list_of_tags:
-		return result
+def combine(*args):
+	lists_of_tags = list(args)
+	initial = lists_of_tags.pop(0)
+	tags, nontags = split(initial)
 	for superior in lists_of_tags:
-		for item in superior:
-			result.append(item)
-			result = pack(result)
-	return result
+		assert isinstance(superior, (tuple, list))
+		new_tags, new_nontags = split(superior)
+		nontags.extend(new_nontags)
+		for item in new_tags:
+			tags = pack(tags+[item])
+	return tags, nontags
 #
-def convert(iterable, negations=None, prepend_tags=[], append_tags=[]):
+def convert(iterable, negations=[], prepend_tags=[], append_tags=[]):
 	"""
 >>> convert('red green blue banana APPLE nogreen purple red'.split())
 ['banana', 'APPLE', <purple>, <red>]
 
 """
 	items = []
-	negations = negations or []
-	#a = items.append # delme
 	### TODO: this is likely inefficient ###
 	def extend(list_of_tags, item):
 		"""Relies heavily on members added during runtime.
@@ -110,7 +110,9 @@ def convert(iterable, negations=None, prepend_tags=[], append_tags=[]):
 			items.append(item)
 		return pack(list_of_tags)
 	for field, literal in enumerate(iterable):
-		if literal in Taxonomy:
+		if not isinstance(literal, (str, TaxonObject)):
+			raise ValueError(literal)
+		if literal in Taxonomy or isinstance(literal, TaxonObject):
 			extend(items, literal)
 			#if literal == tag(None):
 			#	items = []

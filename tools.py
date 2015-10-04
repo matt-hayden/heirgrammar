@@ -13,32 +13,39 @@ class Namespace(dict):
 		self.__dict__ = self
 
 def path_split(path, stopwords=['delme', 'rules', 'sortme', 'working'], sep=os.path.sep, all_commas=False, **kwargs):
-	path_parts = [ p for p in path.split(sep) if p not in ['', '.', '..'] ]
+	def _expand_commas(splitted_path):
+		for p in path_parts:
+			if ',' in p:
+				sub_parts = p.split(',')
+				tags, nontags = parser.split(sub_parts)
+				if nontags and not all_commas:
+					yield p
+				else:
+					yield from sub_parts
+			else:
+				yield p
+
+	if isinstance(path, str):
+		path_parts = [ p for p in path.split(sep) if p not in ['', '.', '..'] ]
+	else:
+		raise ValueError(path)
+
+	### Custom:
 	try:
 		p, n = path_parts[0].rsplit('.', 1)
 		if n.isdigit():
 			path_parts[0] = p
 	except:
 		pass
-	parts = []
-	a = parts.append
-	for p in path_parts:
-		if ',' in p:
-			sub_parts = p.split(',')
-			tags, nontags = parser.split(sub_parts)
-			if nontags and not all_commas:
-				a(p)
-			else:
-				parts.extend(sub_parts)
-		else:
-			a(p)
-	#if any(w in parts for w in stopwords):
+	###
+
+	parts = list(_expand_commas(path_parts))
 	if set(stopwords) & set(parts):
 		return [], path
 	tags, s = parser.split(parts, **kwargs)
 	return tags, sep.join(str(p) for p in s)
-def path_arrange(*args, **kwargs):
-	sep = kwargs.get('sep', os.path.sep)
+def path_arrange(*args, sep=os.path.sep, **kwargs):
+	#sep = kwargs.get('sep', os.path.sep)
 	tags, newpath = path_split(*args, **kwargs)
 	if tags:
 		highest_pri = max(t.pri for t in tags)
@@ -46,7 +53,8 @@ def path_arrange(*args, **kwargs):
 	else:
 		highest_pri = total_rank = 0
 	return highest_pri, total_rank, sep.join(str(t) for t in tags+[newpath])
-def walk(*args, **kwargs):
+def walk(*args, use_tagfiles=True, **kwargs):
+	debug=info=print ## TODO
 	options = kwargs
 	for arg in args:
 		assert isinstance(arg, str)
@@ -55,9 +63,10 @@ def walk(*args, **kwargs):
 		for root, dirs, files in os.walk(arg):
 			file_tags = None # directory mode
 			dirs = [ d for d in dirs if not d.startswith('.') ] # prune out hidden directories
-			if '.tags' in files:
-				info("Including {root}/.tags".format(**locals()) )
-				tag_pairs = tagfile.parse_tagfile(os.path.join(root, '.tags'))
+			if use_tagfiles and '.tags' in files:
+				tagfilename = os.path.join(root, '.tags')
+				info("Including "+tagfilename)
+				tag_pairs = tagfile.parse_tagfile(tagfilename)
 				file_tags = { f: tl for f, tl in tag_pairs if f in files } # file mode
 			files = [ f for f in files if not f.startswith('.') ] # prune out hidden files
 			src = os.path.relpath(root)
@@ -68,17 +77,28 @@ def walk(*args, **kwargs):
 				stat_by_file = { f: os.stat(os.path.join(root, f)) for f in files }
 			dir_pri, dir_rank, dir_newpath = path_arrange(src, **options)
 			if file_tags:
+				dir_tags, dir_nontags = path_split(dir_newpath)
+				info("Files tagged:")
+				for f, tl in file_tags.items():
+					info("\t{f}: {tl}".format(**locals()) )
+				info("Will override {dir_tags}+{dir_nontags}".format(**locals()) )
 				for f in files:
 					s = stat_by_file[f].st_size
 					if f in file_tags:
-						my_pri, my_rank, newpath = path_arrange(parser.combine(dir_newpath, file_tags[f]), **options)
-						if src == os.path.relpath(newpath):
-							newpath = None
-						yield my_pri, my_rank, s, (os.path.join(src, f), newpath)
+						my_tags, my_nontags = file_tags.pop(f)
+						new_parts, _ = parser.combine(dir_tags, my_tags)
+						assert not _
+						new_parts.extend(dir_nontags)
+						new_parts.extend(my_nontags)
+						newpath = os.path.sep.join(str(p) for p in new_parts)
 					else:
-						if src == os.path.relpath(dir_newpath):
-							newpath = None
-						yield dir_pri, dir_rank, s, (os.path.join(src, f), newpath)
+						newpath = dir_newpath
+					if src == os.path.relpath(newpath):
+						debug("{}: no change".format(f))
+						newpath = None
+					else:
+						info("{f} => {newpath}".format(**locals()) )
+					yield dir_pri, dir_rank, s, (os.path.join(src, f), newpath)
 			else:
 				total_size = sum(s.st_size for (f, s) in stat_by_file.items())
 				if src == os.path.relpath(dir_newpath):

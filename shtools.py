@@ -7,7 +7,7 @@ from . import debug, info, warning, error, panic
 from . import sq, tools
 
 def _move(src, dest):
-	assert os.path.isdir(src)
+	assert os.path.exists(src)
 	if os.path.exists(dest):
 		assert os.path.isdir(dest)
 	if os.path.relpath(src) == os.path.relpath(dest):
