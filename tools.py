@@ -54,7 +54,6 @@ def path_arrange(*args, sep=os.path.sep, **kwargs):
 		highest_pri = total_rank = 0
 	return highest_pri, total_rank, sep.join(str(t) for t in tags+[newpath])
 def walk(*args, use_tagfiles=True, **kwargs):
-	debug=info=print ## TODO
 	options = kwargs
 	for arg in args:
 		assert isinstance(arg, str)
@@ -77,20 +76,19 @@ def walk(*args, use_tagfiles=True, **kwargs):
 				stat_by_file = { f: os.stat(os.path.join(root, f)) for f in files }
 			dir_pri, dir_rank, dir_newpath = path_arrange(src, **options)
 			if file_tags:
-				dir_tags, dir_nontags = path_split(dir_newpath)
+				dir_tags, dir_path = path_split(dir_newpath)
 				info("Files tagged:")
 				for f, tl in file_tags.items():
 					info("\t{f}: {tl}".format(**locals()) )
-				info("Will override {dir_tags}+{dir_nontags}".format(**locals()) )
+				info("Will override {dir_tags}+{dir_path}".format(**locals()) )
 				for f in files:
 					s = stat_by_file[f].st_size
 					if f in file_tags:
 						my_tags, my_nontags = file_tags.pop(f)
 						new_parts, _ = parser.combine(dir_tags, my_tags)
 						assert not _
-						new_parts.extend(dir_nontags)
-						new_parts.extend(my_nontags)
-						newpath = os.path.sep.join(str(p) for p in new_parts)
+						S = [ str(p) for p in new_parts ]+[dir_path]+my_nontags
+						newpath = os.path.join(*S)
 					else:
 						newpath = dir_newpath
 					if src == os.path.relpath(newpath):
