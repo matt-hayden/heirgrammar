@@ -5,6 +5,7 @@ import sys
 
 from . import debug, info, warning, error, panic
 from . import tools
+from .cli import sq
 
 def _move(src, dest):
 	assert os.path.isdir(src)
@@ -25,7 +26,7 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 	if args == ('.',):
 		fargs = ''
 	else:
-		fargs = ' '.join(shlex.quote(a) for a in args) # see quote assert above
+		fargs = sq(*args)
 	chunks = tools.chunk(*args, **kwargs) # returns a list of (size, (src, dest)) with dest=None for no change
 	if not chunks:
 		raise StopIteration
@@ -75,15 +76,19 @@ $FIND {fargs} -empty -delete
 $FIND {fargs} -empty -delete
 '''.format(**locals())
 
-if __name__ == '__main__':
-	from glob import glob
-	import sys
-
-	parser.setup(glob('rules/*.rules'))
-	ha = list(hier_arrange(*sys.argv[1:]))
-	if ha:
-		print("# Resulting script:")
-		for line in ha:
-			print(line)
+def arrange_dirs(*args, fileout='', **kwargs):
+	def _get_lines(*args, **kwargs):
+		ha = list(hier_arrange(*args, **kwargs)) # heir_arrange is a generator of syntax lines
+		if ha:
+			yield "#! /bin/bash"
+			yield from ha
+	if hasattr(fileout, 'write'):
+		debug("Writing to {}".format(fileout))
+		fileout.write(os.linesep.join(_get_lines(*args, **kwargs)))
+	elif isinstance(fileout, (str, int)):
+		with open(fileout, 'w') as fo:
+			return arrange_dirs(*args, fileout=fo, **kwargs)
 	else:
-		warning("No results for {}".format(' '.join(sys.argv)))
+		if fileout:
+			warning("'{}' invalid, writing to standard out".format(fileout))
+		print('\n'.join(_get_lines(*args, **kwargs)) )
