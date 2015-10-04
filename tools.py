@@ -5,7 +5,7 @@ from os.path import exists, isfile, isdir
 import shutil
 
 from . import debug, info, warning, error, panic
-from . import parser
+from . import parser, tagfile
 
 class Namespace(dict):
 	def __init__(self, *args, **kwargs):
@@ -47,24 +47,43 @@ def path_arrange(*args, **kwargs):
 		highest_pri = total_rank = 0
 	return highest_pri, total_rank, sep.join(str(t) for t in tags+[newpath])
 def walk(*args, **kwargs):
+	options = kwargs
 	for arg in args:
-		assert not isinstance(arg, list)
+		assert isinstance(arg, str)
 		if not os.path.isdir(arg):
 			warning("Skipping "+arg)
 		for root, dirs, files in os.walk(arg):
+			file_tags = None # directory mode
 			dirs = [ d for d in dirs if not d.startswith('.') ] # prune out hidden directories
+			if '.tags' in files:
+				info("Including {root}/.tags".format(**locals()) )
+				tag_pairs = tagfile.parse_tagfile(os.path.join(root, '.tags'))
+				file_tags = { f: tl for f, tl in tag_pairs if f in files } # file mode
 			files = [ f for f in files if not f.startswith('.') ] # prune out hidden files
 			src = os.path.relpath(root)
 			if (not files) or (src in ['.', '..', '']):
-				debug("Skipping "+src)
+				debug("Skipping {root}/{src}".format(**locals()) )
 				continue
+			with suppress(FileNotFoundError):
+				stat_by_file = { f: os.stat(os.path.join(root, f)) for f in files }
+			dir_pri, dir_rank, dir_newpath = path_arrange(src, **options)
+			if file_tags:
+				for f in files:
+					s = stat_by_file[f].st_size
+					if f in file_tags:
+						my_pri, my_rank, newpath = path_arrange(parser.combine(dir_newpath, file_tags[f]), **options)
+						if src == os.path.relpath(newpath):
+							newpath = None
+						yield my_pri, my_rank, s, (os.path.join(src, f), newpath)
+					else:
+						if src == os.path.relpath(dir_newpath):
+							newpath = None
+						yield dir_pri, dir_rank, s, (os.path.join(src, f), newpath)
 			else:
-				file_paths = [ os.path.join(src, f) for f in files ]
-				with suppress(FileNotFoundError):
-					stat_by_file = [ (f, os.stat(f) ) for f in file_paths ]
-				file_size = sum(s.st_size for (f, s) in stat_by_file)
-			pri, rank, newpath = path_arrange(src, **kwargs)
-			yield pri, rank, file_size, (src, None if (src==os.path.relpath(newpath)) else newpath)
+				total_size = sum(s.st_size for (f, s) in stat_by_file.items())
+				if src == os.path.relpath(dir_newpath):
+					newpath = None
+				yield dir_pri, dir_rank, total_size, (src, newpath)
 def _chunker(rows, volumesize, this_size=0, this_vol=[]):
 	assert volumesize
 	errors = []

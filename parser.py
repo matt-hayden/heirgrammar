@@ -7,6 +7,7 @@ from . import debug, info, warning, error, panic
 
 from .Taxon import *
 
+__version__ = 'parser 0.3'
 
 def define_tags(lines, direction=-1, init='''import string\nprint("# yee-haw!")''', **kwargs):
 	"""This is the major setup function for the module."""
@@ -54,6 +55,15 @@ def pack(list_of_tags):
 			if (r == t.rank):
 				list_of_tags.remove(t)
 	return list_of_tags
+def combine(*lists_of_tags):
+	result = list_of_tags.pop(0)
+	if not list_of_tags:
+		return result
+	for superior in lists_of_tags:
+		for item in superior:
+			result.append(item)
+			result = pack(result)
+	return result
 #
 def convert(iterable, negations=None, prepend_tags=[], append_tags=[]):
 	"""
@@ -64,6 +74,7 @@ def convert(iterable, negations=None, prepend_tags=[], append_tags=[]):
 	items = []
 	negations = negations or []
 	#a = items.append # delme
+	### TODO: this is likely inefficient ###
 	def extend(list_of_tags, item):
 		"""Relies heavily on members added during runtime.
 		"""

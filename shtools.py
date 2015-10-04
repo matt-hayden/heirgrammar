@@ -4,8 +4,7 @@ import shlex
 import sys
 
 from . import debug, info, warning, error, panic
-from . import tools
-from .cli import sq
+from . import sq, tools
 
 def _move(src, dest):
 	assert os.path.isdir(src)
