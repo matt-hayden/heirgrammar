@@ -4,6 +4,7 @@ import os, os.path
 import sys
 
 from . import *
+from .pager import pager
 
 info("CLI using parser "+parser.__version__)
 
@@ -25,12 +26,15 @@ def setup(args=[ 'rules', '.rules', '../rules', '../.rules' ], **kwargs):
 #
 def test(arg, sep=os.path.sep):
 	tags, nontags = parser.split(arg.replace(',', sep).split(sep) )
-	yield     arg
-	yield     "{nontags} unused".format(**locals())
-	yield     "{:>30} {:^15} {:^9}".format("tag", "combined rank", "priority^")
-	for t in tags:
-		yield "{!r:>30} {: 15d} {: 9d}".format(t, t.rank, t.pri)
-	yield     "{:>30} {: 15d} {: 9d}".format("total", sum(t.rank for t in tags), max(t.pri for t in tags))
+	_, _, newpath = tools.path_arrange(arg)
+	yield         "{arg} => {newpath}:".format(**locals())
+	if tags:
+		yield     "{:>30} {:^15} {:^9}".format("tag", "combined rank", "priority^")
+		for t in tags:
+			yield "{!r:>30} {: 15d} {: 9d}".format(t, t.rank, t.pri)
+		yield     "{:>30} {: 15d} {: 9d}".format("total", sum(t.rank for t in tags), max(t.pri for t in tags))
+	if nontags:
+		yield     "{nontags} are not tags".format(**locals())
 #
 def main(*args, **kwargs):
 	rules_dirs = kwargs.pop('--rules').split(',')
