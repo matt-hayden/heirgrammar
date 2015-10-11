@@ -41,7 +41,7 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 	if init:
 		yield init
 	else:	
-		yield '''#!/bin/bash
+		yield '''#! /bin/bash
 set -e
 '''
 		if sys.platform.startswith('darwin'):
@@ -79,7 +79,6 @@ def arrange_dirs(*args, fileout='', **kwargs):
 	def _get_lines(*args, **kwargs):
 		ha = list(hier_arrange(*args, **kwargs)) # heir_arrange is a generator of syntax lines
 		if ha:
-			yield "#! /bin/bash"
 			yield from ha
 	if hasattr(fileout, 'write'):
 		debug("Writing to {}".format(fileout))
