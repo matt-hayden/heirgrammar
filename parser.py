@@ -71,13 +71,16 @@ def combine(*args):
 				tags = pack(tags+[item])
 	return tags, nontags
 #
-def convert(iterable, negations=[], prepend_tags=[], append_tags=[]):
+def convert(iterable, remove_tags=None, prepend_tags=None, append_tags=None):
 	"""
 >>> convert('red green blue banana APPLE nogreen purple red'.split())
 ['banana', 'APPLE', <purple>, <red>]
 
 """
 	items = []
+	my_removes = remove_tags[:] if remove_tags else []
+	my_prepends = prepend_tags[:] if prepend_tags else []
+	my_appends = append_tags[:] if append_tags else []
 	### TODO: this is likely inefficient ###
 	def extend(list_of_tags, item):
 		"""Relies heavily on members added during runtime.
@@ -87,15 +90,15 @@ def convert(iterable, negations=[], prepend_tags=[], append_tags=[]):
 				if item.purge:
 					return list_of_tags
 			if hasattr(item, 'removes'):
-				negations.extend(item.removes)
+				my_removes.extend(item.removes)
 			#if hasattr(item, 'fallback'): # TODO: causes weird error at items.append(item)
 			#	items = item.fallback+items
 			if hasattr(item, 'prepends'):
 				for p in item.prepends:
 					items.append(p)
 					list_of_tags = pack(list_of_tags)
-			if prepend_tags:
-				for p in prepend_tags:
+			if my_prepends:
+				for p in my_prepends:
 					items.append(p)
 					list_of_tags = pack(list_of_tags)
 			items.append(item)
@@ -104,8 +107,8 @@ def convert(iterable, negations=[], prepend_tags=[], append_tags=[]):
 				for a in item.appends:
 					items.append(a)
 					list_of_tags = pack(list_of_tags)
-			if append_tags:
-				for a in append_tags:
+			if my_appends:
+				for a in my_appends:
 					items.append(a)
 					list_of_tags = pack(list_of_tags)
 		elif (item in Taxonomy):
@@ -129,7 +132,7 @@ def convert(iterable, negations=[], prepend_tags=[], append_tags=[]):
 				n = token[2:]
 				if n in Taxonomy:
 					t = tag(n)
-					negations.append(t)
+					my_removes.append(t)
 				else:
 					extend(items, token)
 				continue
@@ -137,11 +140,10 @@ def convert(iterable, negations=[], prepend_tags=[], append_tags=[]):
 				extend(items, token)
 			else:
 				extend(items, literal)
-	for n in negations:
-		try:
+	if my_removes:
+		info("Tags {} want to remove {}".format(items, my_removes))
+		for n in set(items) & set(my_removes):
 			items.remove(n)
-		except:
-			debug("Failed to remove {}".format(n))
 	return pack(items)
 def split(iterable, **kwargs):
 	def key(t):
@@ -152,6 +154,7 @@ def split(iterable, **kwargs):
 		if item:
 			(tags if isinstance(item, TaxonObject) else nontags).append(item)
 			tags.sort(key=key)
+	debug("{} => {}+{}".format(iterable, tags, nontags))
 	return tags, nontags
 def arrange(iterable, **kwargs):
 	"""

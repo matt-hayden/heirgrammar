@@ -14,7 +14,7 @@ def path_split(path, stopwords=['delme', 'rules', 'sortme', 'working'], sep=os.p
 				sub_parts = p.split(',')
 				tags, nontags = parser.split(sub_parts)
 				if nontags and not all_commas:
-					yield p
+					yield p # a string with commas
 				else:
 					yield from tags
 					yield from nontags
@@ -30,11 +30,13 @@ def path_split(path, stopwords=['delme', 'rules', 'sortme', 'working'], sep=os.p
 	with suppress(Exception):
 		p, n = path_parts[0].rsplit('.', 1)
 		if n.isdigit():
+			debug("Removing extension from {}".format(path_parts[0]))
 			path_parts[0] = p
 	###
 
 	parts = list(_expand_commas(path_parts))
 	if set(stopwords) & set(parts):
+		debug("Stopword reached in {}".format(parts))
 		return [], path
 	tags, s = parser.split(parts, **kwargs)
 	return tags, sep.join(str(p) for p in s)

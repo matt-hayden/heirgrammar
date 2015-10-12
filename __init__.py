@@ -9,7 +9,10 @@ __all__ = [ '__version__' ]
 
 import logging
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG if __debug__ else logging.WARNING)
+if __debug__:
+	logging.basicConfig(level=logging.DEBUG)
+else:
+	logger.setLevel(logging.WARNING)
 debug, info, warning, error, panic = logger.debug, logger.info, logger.warning, logger.error, logger.critical
 __all__.extend('debug info warning error panic'.split())
 
