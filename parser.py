@@ -4,10 +4,9 @@ import os, os.path
 import re
 
 from . import debug, info, warning, error, panic
-
 from .Taxon import *
 
-__version__ = 'parser 0.3'
+__version__ = 'parser 0.4'
 
 def define_tags(lines, direction=-1, init='''import string\nprint("# yee-haw!")''', **kwargs):
 	"""This is the major setup function for the module."""
@@ -44,6 +43,7 @@ def define_tags(lines, direction=-1, init='''import string\nprint("# yee-haw!")'
 def pack(list_of_tags):
 	"""Given a list of strings and TaxonObjects, remove TaxonObjects with the same rank as the right-most TaxonObject (in-place). This also applies to duplicates.
 	"""
+	# get rightmost ranked object
 	for i in range(-1, -len(list_of_tags), -1):
 		if hasattr(list_of_tags[i], 'rank'):
 			break
@@ -54,17 +54,21 @@ def pack(list_of_tags):
 		if hasattr(t, 'rank'):
 			if (r == t.rank):
 				list_of_tags.remove(t)
+				debug("{t} removed from {list_of_tags}".format(**locals() ))
 	return list_of_tags
 def combine(*args):
 	lists_of_tags = list(args)
 	initial = lists_of_tags.pop(0)
 	tags, nontags = split(initial)
 	for superior in lists_of_tags:
+		if not superior:
+			continue
 		assert isinstance(superior, (tuple, list))
 		new_tags, new_nontags = split(superior)
 		nontags.extend(new_nontags)
 		for item in new_tags:
-			tags = pack(tags+[item])
+			if item:
+				tags = pack(tags+[item])
 	return tags, nontags
 #
 def convert(iterable, negations=[], prepend_tags=[], append_tags=[]):
@@ -145,8 +149,9 @@ def split(iterable, **kwargs):
 	cts = convert(iterable, **kwargs)
 	tags, nontags = [], []
 	for item in cts:
-		(tags if isinstance(item, TaxonObject) else nontags).append(item)
-		tags.sort(key=key)
+		if item:
+			(tags if isinstance(item, TaxonObject) else nontags).append(item)
+			tags.sort(key=key)
 	return tags, nontags
 def arrange(iterable, **kwargs):
 	"""

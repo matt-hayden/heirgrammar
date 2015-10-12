@@ -11,6 +11,7 @@
     -h --help  show this help message and exit
     --version  show version and exit
     --all-commas=BOOL  Split on all commas, rather than just commas that split predefined tags [default: False]
+    --use-tagfiles=BOOL  Find .tags (JSON format) and insert tags appropriately [default: True]
     -A PATTERN, --append=PATTERN  Comma-separated tags that will be added, AND emphasized
     -B PATTERN, --prepend=PATTERN  Comma-separated tags that will be added, but not emphasized
     -o FILE, --output=FILE  Some output is more useful when directed at a file

@@ -7,11 +7,6 @@ import shutil
 from . import debug, info, warning, error, panic
 from . import parser, tagfile
 
-class Namespace(dict):
-	def __init__(self, *args, **kwargs):
-		super(Namespace, self).__init__(*args, **kwargs)
-		self.__dict__ = self
-
 def path_split(path, stopwords=['delme', 'rules', 'sortme', 'working'], sep=os.path.sep, all_commas=False, **kwargs):
 	def _expand_commas(splitted_path):
 		for p in path_parts:
@@ -21,22 +16,21 @@ def path_split(path, stopwords=['delme', 'rules', 'sortme', 'working'], sep=os.p
 				if nontags and not all_commas:
 					yield p
 				else:
-					yield from sub_parts
+					yield from tags
+					yield from nontags
 			else:
 				yield p
-
+	#
 	if isinstance(path, str):
 		path_parts = [ p for p in path.split(sep) if p not in ['', '.', '..'] ]
 	else:
 		raise ValueError(path)
 
 	### Custom:
-	try:
+	with suppress(Exception):
 		p, n = path_parts[0].rsplit('.', 1)
 		if n.isdigit():
 			path_parts[0] = p
-	except:
-		pass
 	###
 
 	parts = list(_expand_commas(path_parts))
@@ -99,7 +93,8 @@ def walk(*args, use_tagfiles=True, **kwargs):
 					yield dir_pri, dir_rank, s, (os.path.join(src, f), newpath)
 			else:
 				total_size = sum(s.st_size for (f, s) in stat_by_file.items())
-				if src == os.path.relpath(dir_newpath):
+				newpath = dir_newpath
+				if src == os.path.relpath(newpath):
 					newpath = None
 				yield dir_pri, dir_rank, total_size, (src, newpath)
 def _chunker(rows, volumesize, this_size=0, this_vol=[]):

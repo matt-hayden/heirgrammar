@@ -4,7 +4,8 @@ import shlex
 import sys
 
 from . import debug, info, warning, error, panic
-from . import sq, tools
+from .tools import *
+from .utils import *
 
 def _move(src, dest):
 	assert os.path.exists(src)
@@ -26,7 +27,7 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 		fargs = ''
 	else:
 		fargs = sq(*args)
-	chunks = tools.chunk(*args, **kwargs) # returns a list of (size, (src, dest)) with dest=None for no change
+	chunks = chunk(*args, **kwargs) # returns a list of (size, (src, dest)) with dest=None for no change
 	if not chunks:
 		raise StopIteration
 	total_size = sum(s for s, _ in chunks)

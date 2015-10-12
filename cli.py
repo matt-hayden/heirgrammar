@@ -60,6 +60,7 @@ def main(*args, **kwargs):
 	options['all_commas'] = kwargs.pop('--all-commas', None)
 	options['fileout'] = kwargs.pop('--output', None)
 	options['prefix'] = kwargs.pop('--prefix', None)
+	options['use_tagfiles'] = kwargs.pop('--use-tagfiles', None)
 
 	if kwargs['--prepend']:
 		try:
