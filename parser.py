@@ -200,11 +200,11 @@ def print_Taxonomy(header="lno "+"rank".rjust(25)+" -pri- count label"):
 		"""
 		name, members = args
 		if 'pri' in members:
-			return -members['pri'], members['rank'], name
+			return -members['pri'], members['rank'], name or ''
 		if 'rank' in members:
-			return 0, members['rank'], name
+			return 0, members['rank'], name or ''
 		else:
-			return 0, 0, name
+			return 0, 0, name or ''
 		#return 'isolate' in members, members.get('pri', 0), -members.get('rank', 0), name
 	if header:
 		print(header)
