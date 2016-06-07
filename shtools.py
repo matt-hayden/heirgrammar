@@ -27,6 +27,7 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 		fargs = ''
 	else:
 		fargs = sq(*args)
+	do_sort = kwargs.pop('do_sort', True)
 	chunks = chunk(*args, **kwargs) # returns a list of (size, (src, dest)) with dest=None for no change
 	if not chunks:
 		raise StopIteration
@@ -65,7 +66,10 @@ $FIND {fargs} -empty -delete
 ### Volume {n}: {size:,} bytes
 '''.format(**locals())
 			for src, dest in pairs:
-				dest = prefix.format(n)+dest if dest else prefix.format(n)+src
+				if dest and do_sort:
+					dest = prefix.format(n)+dest
+				else:
+					dest = prefix.format(n)+src
 				yield _move(src, dest)
 		else:
 			for src, dest in pairs:

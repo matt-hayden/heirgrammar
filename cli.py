@@ -59,6 +59,7 @@ def main(*args, **kwargs):
 
 	options['all_commas'] = kwargs.pop('--all-commas', None)
 	options['fileout'] = kwargs.pop('--output', None)
+	options['no_commas'] = kwargs.pop('--no-commas', None)
 	options['prefix'] = kwargs.pop('--prefix', None)
 	options['use_tagfiles'] = kwargs.pop('--use-tagfiles', None)
 
@@ -76,6 +77,7 @@ def main(*args, **kwargs):
 			warning("--append={} invalid, ignoring".format(kwargs.pop('--append')) )
 
 	if kwargs['dirsplit']:
+		options['do_sort'] = kwargs.pop('--do-sort', None)
 		try:
 			vs = int(float(kwargs['--volumesize']))
 			assert 0 < vs
