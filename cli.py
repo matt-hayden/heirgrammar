@@ -3,6 +3,10 @@ import glob
 import os, os.path
 import sys
 
+import logging
+logger = logging.getLogger(__name__)
+debug, info, warning, error, panic = logger.debug, logger.info, logger.warning, logger.error, logger.critical
+
 from . import *
 from .pager import pager
 
@@ -43,38 +47,34 @@ def main(*args, **kwargs):
 		with pager():
 			return parser.print_Taxonomy()
 	elif kwargs['test']:
-		with pager():
-			for arg in kwargs.pop('EXPR'):
-				print('\n'.join(test(arg)) )
-				print()
+		for arg in kwargs.pop('EXPR'):
+			print('\n'.join(test(arg)) )
+			print()
 		return 0
 	debug("Processing command-line options:")
 	options = {}
 
-	stopwords = set(s.strip() for s in kwargs.pop('--exclude').split(','))
-	stopwords.update(set(rules_dirs))
-	assert 'rules' in stopwords # TODO
-
-	options['stopwords'] = stopwords
-
-	options['all_commas'] = kwargs.pop('--all-commas', None)
-	options['fileout'] = kwargs.pop('--output', None)
-	options['no_commas'] = kwargs.pop('--no-commas', None)
-	options['prefix'] = kwargs.pop('--prefix', None)
-	options['use_tagfiles'] = kwargs.pop('--use-tagfiles', None)
+	options['all_commas']		= kwargs.pop('--all-commas') in (True, 'True', 'TRUE')
+	options['fileout']			= kwargs.pop('--output', None)
+	if kwargs['--min-rank'] is not None:
+		options['min_rank']		= int(kwargs.pop('--min-rank'))
+	options['no_commas']		= kwargs.pop('--no-commas', None) in (True, 'True', 'TRUE')
+	options['prefix']			= kwargs.pop('--prefix', 'vol_{:03d}')
+	options['stopwords']		= set(s.strip() for s in kwargs.pop('--exclude').split(',')) | set(rules_dirs) | set(['rules'])
+	options['use_tagfiles']		= kwargs.pop('--use-tagfiles', None)
 
 	if kwargs['--prepend']:
 		try:
 			a, b = parser.split(kwargs['--prepend'].split(','))
 			options['prepend_tags'] = a+b
 		except:
-			warning("--prepend={} invalid, ignoring".format(kwargs.pop('--prepend')) )
+			error("Invalid argument --prepend={}".format(kwargs.pop('--prepend')) )
 	if kwargs['--append']:
 		try:
 			a, b = parser.split(kwargs['--append'].split(','))
 			options['append_tags'] = a+b
 		except:
-			warning("--append={} invalid, ignoring".format(kwargs.pop('--append')) )
+			error("Invalid argument --append={}".format(kwargs.pop('--append')) )
 
 	if kwargs['dirsplit']:
 		options['do_sort'] = kwargs.pop('--do-sort', None)
@@ -82,11 +82,8 @@ def main(*args, **kwargs):
 			vs = int(float(kwargs['--volumesize']))
 			assert 0 < vs
 		except:
-			raise ValueError("Invalid volume size: {}".format(kwargs.pop('--volumesize')) )
-		shtools.arrange_dirs(*args,
-					 prefix=options.pop('prefix') or 'vol_{:03d}',
-					 volumesize=vs,
-					 **options)
+			raise ValueError("Invalid argument --volumesize={}".format(kwargs.pop('--volumesize')) )
+		shtools.arrange_dirs(*args, volumesize=vs, **options)
 	elif kwargs['sort']:
 		shtools.arrange_dirs(*args, **options)
 	return 0

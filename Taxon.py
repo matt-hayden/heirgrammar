@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 if not 'Taxonomy' in globals():
 	Taxonomy = { None: {'id': 0, 'name': None } }

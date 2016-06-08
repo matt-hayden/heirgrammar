@@ -4,17 +4,12 @@ import os, os.path
 import shlex
 import sys
 
-__version__ = '0.2'
+__version__ = '0.2.1'
 __all__ = [ '__version__' ]
 
 import logging
 logger = logging.getLogger(__name__)
-if __debug__:
-	logging.basicConfig(level=logging.DEBUG)
-else:
-	logger.setLevel(logging.WARNING)
-debug, info, warning, error, panic = logger.debug, logger.info, logger.warning, logger.error, logger.critical
-__all__.extend('debug info warning error panic'.split())
+logging.basicConfig(level=logging.DEBUG if __debug__ else logging.WARNING)
 
 from .pager import pager # ought to be an external module
 from . import parser, tools, shtools, tagfile

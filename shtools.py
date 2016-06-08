@@ -3,7 +3,10 @@ import os, os.path
 import shlex
 import sys
 
-from . import debug, info, warning, error, panic
+import logging
+logger=logging.getLogger(__name__)
+debug, info, warning, error, panic = logger.debug, logger.info, logger.warning, logger.error, logger.critical
+
 from .tools import *
 from .utils import *
 

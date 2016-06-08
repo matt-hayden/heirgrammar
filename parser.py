@@ -3,7 +3,10 @@ import collections
 import os, os.path
 import re
 
-from . import debug, info, warning, error, panic
+import logging
+logger=logging.getLogger(__name__)
+debug, info, warning, error, panic = logger.debug, logger.info, logger.warning, logger.error, logger.critical
+
 from .Taxon import *
 
 __version__ = 'parser 0.4'

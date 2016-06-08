@@ -4,22 +4,41 @@ import os, os.path
 from os.path import exists, isfile, isdir
 import shutil
 
-from . import debug, info, warning, error, panic
+import logging
+logger = logging.getLogger(__name__)
+debug, info, warning, error, panic = logger.debug, logger.info, logger.warning, logger.error, logger.critical
+
+import tqdm
+
 from . import parser, tagfile
 
-def path_split(path, stopwords=['delme', 'rules', 'sortme', 'working'], sep=os.path.sep, all_commas=False, **kwargs):
+def path_split(path,
+			   sep=os.path.sep,
+			   all_commas=None,
+			   no_commas=None,
+			   stopwords=['delme', 'rules', 'sortme', 'working'],
+			   **kwargs):
+	"""
+	Returns:
+		(tags, destination directory)
+	"""
+	options = kwargs
 	def _expand_commas(splitted_path):
 		for p in path_parts:
-			if ',' in p:
-				sub_parts = p.split(',')
+			c = p.strip('+_ ')
+			if c != p:
+				debug("Cleaning "+p)
+			if ',' in c:
+				sub_parts = c.split(',')
 				tags, nontags = parser.split(sub_parts)
 				if nontags and not all_commas:
-					yield p # a string with commas
+					yield c # a string with commas
 				else:
+					debug("Splitting on commas")
 					yield from tags
 					yield from nontags
 			else:
-				yield p
+				yield c
 	#
 	if isinstance(path, str):
 		path_parts = [ p for p in path.split(sep) if p not in ['', '.', '..'] ]
@@ -27,34 +46,40 @@ def path_split(path, stopwords=['delme', 'rules', 'sortme', 'working'], sep=os.p
 		raise ValueError(path)
 
 	### Custom:
-	with suppress(Exception):
+	try:
 		p, n = path_parts[0].rsplit('.', 1)
 		if n.isdigit():
 			debug("Removing extension from {}".format(path_parts[0]))
 			path_parts[0] = p
+	except:
+		pass
 	###
-
-	parts = list(_expand_commas(path_parts))
+	parts = path_parts if no_commas else list(_expand_commas(path_parts))
 	if set(stopwords) & set(parts):
 		debug("Stopword reached in {}".format(parts))
 		return [], path
-	tags, s = parser.split(parts, **kwargs)
+	tags, s = parser.split(parts, **options)
 	return tags, sep.join(str(p) for p in s)
 def path_arrange(*args, sep=os.path.sep, **kwargs):
-	#sep = kwargs.get('sep', os.path.sep)
-	tags, newpath = path_split(*args, **kwargs)
+	options = kwargs
+	tags, newpath = path_split(*args, **options)
 	if tags:
 		highest_pri = max(t.pri for t in tags)
 		total_rank = sum(t.rank for t in tags)
 	else:
 		highest_pri = total_rank = 0
 	return highest_pri, total_rank, sep.join(str(t) for t in tags+[newpath])
-def walk(*args, use_tagfiles=True, **kwargs):
+def walk(*args, min_rank=None, use_tagfiles=True, **kwargs):
+	if min_rank is not None:
+		try:
+			min_rank = int(min_rank)
+		except:
+			error("Bad argument: --min-rank={}".format(min_rank))
 	options = kwargs
 	for arg in args:
 		assert isinstance(arg, str)
 		if not os.path.isdir(arg):
-			warning("Skipping "+arg)
+			warning("Skipping file "+arg)
 		for root, dirs, files in os.walk(arg):
 			file_tags = None # directory mode
 			dirs = [ d for d in dirs if not d.startswith('.') ] # prune out hidden directories
@@ -66,13 +91,16 @@ def walk(*args, use_tagfiles=True, **kwargs):
 			files = [ f for f in files if not f.startswith('.') ] # prune out hidden files
 			src = os.path.relpath(root)
 			if (not files) or (src in ['.', '..', '']):
-				debug("Skipping {root}/{src}".format(**locals()) )
+				debug("Skipping fileless {src}".format(**locals()) )
 				continue
 			with suppress(FileNotFoundError):
 				stat_by_file = { f: os.stat(os.path.join(root, f)) for f in files }
 			dir_pri, dir_rank, dir_newpath = path_arrange(src, **options)
+			if (min_rank is not None) and (dir_rank <= min_rank): # these are negative numbers
+				warning("min-rank skips "+arg)
+				continue
 			if file_tags:
-				dir_tags, dir_path = path_split(dir_newpath)
+				dir_tags, dir_path = path_split(dir_newpath, **options)
 				info("Files tagged:")
 				for f, tl in file_tags.items():
 					info("\t{f}: {tl}".format(**locals()) )
@@ -114,7 +142,7 @@ def _chunker(rows, volumesize, this_size=0, this_vol=[]):
 		else:
 			this_size += s
 			this_vol.append( (src, dest) )
-	if this_size: # last
+	if this_size: # last one
 		yield this_size, this_vol
 	if errors:
 		max_size = max(s for _, _, s, _ in errors)
@@ -123,9 +151,13 @@ def _chunker(rows, volumesize, this_size=0, this_vol=[]):
 		for row in errors:
 			p, r, s, (src, dest) = row
 			info("File '{}' too big for {:,} byte volume".format(src, volumesize) )
-def chunk(*args, chunker=_chunker, **kwargs):
-	volumesize = kwargs.pop('volumesize', 0)
-	if kwargs.pop('by_priority', True):
+def chunk(*args,
+		  chunker=_chunker,
+		  by_priority=True,
+		  volumesize=None,
+		  **kwargs):
+	options = kwargs
+	if by_priority:
 		debug("Sort order: priority, rank, size")
 		def key(arg):
 			p, r, s, _ = arg
@@ -135,11 +167,13 @@ def chunk(*args, chunker=_chunker, **kwargs):
 		def key(arg):
 			p, r, s, _ = arg
 			return r, -s
-	my_list = sorted(walk(*args, **kwargs), key=key)
+	my_list = sorted(tqdm.tqdm(walk(*args, **options),
+							   desc="{} arguments".format(len(args)) ),
+					 key=key)
 	if not volumesize:
 		osize = len(my_list)
 		my_list = [ (p, r, s, (src, dest)) for (p, r, s, (src, dest)) in my_list if dest ]
-		debug("{} directories unchanged".format(osize-len(my_list)) )
+		info("{} directories unchanged".format(osize-len(my_list)) )
 	total_size = sum(s for _, _, s, _ in my_list)
 	if not total_size:
 		return []
@@ -149,7 +183,8 @@ def chunk(*args, chunker=_chunker, **kwargs):
 		else:
 			return []
 	else:
-		return list(chunker(my_list, volumesize))
+		return list( tqdm.tqdm(chunker(my_list, volumesize),
+							   desc='Sorting...') )
 #
 if __name__ == '__main__':
 	from glob import glob
@@ -157,4 +192,4 @@ if __name__ == '__main__':
 
 	parser.setup(glob('rules/*.rules'))
 	for arg in sys.argv[1:]:
-		print(arg, path_split(arg))
+		print(arg, path_split(arg, **options))

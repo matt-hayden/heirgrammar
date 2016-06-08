@@ -15,6 +15,7 @@
     --use-tagfiles=BOOL  Find .tags (JSON format) and insert tags appropriately [default: True]
     -A PATTERN, --append=PATTERN  Comma-separated tags that will be added, AND emphasized
     -B PATTERN, --prepend=PATTERN  Comma-separated tags that will be added, but not emphasized
+    -m INT, --min-rank=INT  Ignore operations not meeting a threshold
     -o FILE, --output=FILE  Some output is more useful when directed at a file
     -p PATTERN, --prefix=PATTERN  When directories reach --volumesize, then they will begin based on this pattern [e.g. vol_{:03d}]
     -r RULES_FILES..., --rules=RULES_FILES...  [default: rules,.rules,../rules,../.rules]
@@ -30,6 +31,6 @@ import docopt
 from . import *
 from .cli import main
 
-kwargs = docopt.docopt(__doc__, version=__version__) # make sure to pop 'PATHS' out as file arguments
-args = kwargs.pop('PATHS')
-sys.exit(main(*args, **kwargs))
+options = docopt.docopt(__doc__, version=__version__) # make sure to pop 'PATHS' out as file arguments
+args = options.pop('PATHS')
+sys.exit(main(*args, **options))
