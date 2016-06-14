@@ -24,21 +24,21 @@ def path_split(path,
 	"""
 	options = kwargs
 	def _expand_commas(splitted_path):
-		for p in path_parts:
-			c = p.strip('+_ ')
-			if c != p:
-				debug("Cleaning "+p)
-			if ',' in c:
-				sub_parts = c.split(',')
-				tags, nontags = parser.split(sub_parts)
-				if nontags and not all_commas:
-					yield c # a string with commas
-				else:
-					debug("Splitting on commas")
-					yield from tags
-					yield from nontags
+		for p in splitted_path:
+			if not no_commas:
+				sub_parts = [ c.strip('+_ ') for c in p.split(',') ]
 			else:
-				yield c
+				sub_parts = [p.strip('+_ ')]
+			assert sub_parts
+			tags, nontags = parser.split(sub_parts)
+			if not tags:
+				yield p
+			elif nontags and not all_commas:
+				yield p
+			else:
+				debug("Splitting on commas")
+				yield from tags
+				yield from nontags
 	#
 	if isinstance(path, str):
 		path_parts = [ p for p in path.split(sep) if p not in ['', '.', '..'] ]
