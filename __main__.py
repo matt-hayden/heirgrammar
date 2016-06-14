@@ -24,6 +24,12 @@
     -x PATTERNS, --exclude=PATTERNS...  [default: delme,sortme,working]
 
 """
+import logging
+if __debug__:
+	logging.basicConfig(level=logging.DEBUG, filename='log')
+logging.basicConfig(level=logging.WARNING)
+
+
 import sys
 
 import docopt
