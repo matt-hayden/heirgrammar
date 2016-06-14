@@ -17,10 +17,13 @@ def _move(src, dest):
 	if os.path.relpath(src) == os.path.relpath(dest):
 		return ''
 	shsrc = shlex.quote(src)
-	shdest = shlex.quote(dest)
-	syntax = '''# {shsrc} -> {shdest}
-[[ -d {shdest} ]] || mkdir -p {shdest}
-[[ -d {shsrc} ]] && $MV -t {shdest} {shsrc}/*.*
+	if dest.endswith(src):
+		shdest = os.path.join(shlex.quote(dest[:-len(src)]), '"$src"')
+	else:
+		shdest = shlex.quote(dest)
+	syntax = '''src={shsrc} dest={shdest}
+  [[ -d "$dest" ]] || mkdir -p "$dest"
+  [[ -d "$src" ]] && $MV -t "$dest" "$src"/*.* || file_error "$src"
 '''.format(**locals())
 	return syntax
 def hier_arrange(*args, prefix='', init='', **kwargs):
@@ -48,6 +51,8 @@ def hier_arrange(*args, prefix='', init='', **kwargs):
 	else:	
 		yield '''#! /bin/bash
 set -e
+
+function file_error() { echo "$@" not a directory, ignoring >&2; }
 '''
 		if sys.platform.startswith('darwin'):
 			yield '''MV="gmv -nt"
@@ -60,8 +65,8 @@ FIND=find
 
 # {:.1f} MB in {} volumes
 '''.format(total_size/10E6, len(chunks))
-		yield '''$FIND {fargs} \( -name .DS_Store -o -iname Thumbs.DB -o -empty \) -delete
-$FIND {fargs} -empty -delete
+		yield '''# $FIND {fargs} \( -name .DS_Store -o -iname Thumbs.DB -o -empty \) -delete
+# $FIND {fargs} -empty -delete
 '''.format(**locals())
 	for n, (size, pairs) in enumerate(chunks, start=1):
 		if prefix:
