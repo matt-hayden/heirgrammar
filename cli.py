@@ -78,6 +78,7 @@ def main(*args, **kwargs):
 
 	if kwargs['dirsplit']:
 		options['do_sort'] = kwargs.pop('--do-sort', None)
+		options['prefix'] = options['prefix'] or 'vol_{:03d}'
 		try:
 			vs = int(float(kwargs['--volumesize']))
 			assert 0 < vs

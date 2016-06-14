@@ -20,7 +20,7 @@ def _move(src, dest):
 	shdest = shlex.quote(dest)
 	syntax = '''# {shsrc} -> {shdest}
 [[ -d {shdest} ]] || mkdir -p {shdest}
-[[ -d {shsrc} ]] && $MV -t {shdest} {shsrc}/*
+[[ -d {shsrc} ]] && $MV -t {shdest} {shsrc}/*.*
 '''.format(**locals())
 	return syntax
 def hier_arrange(*args, prefix='', init='', **kwargs):
@@ -76,8 +76,8 @@ $FIND {fargs} -empty -delete
 				yield _move(src, dest)
 		else:
 			for src, dest in pairs:
-				assert dest
-				yield _move(src, dest)
+				if dest: # dest can be None if re-sorting not needed
+					yield _move(src, dest)
 	if not init:
 		yield '''
 $FIND {fargs} -empty -delete

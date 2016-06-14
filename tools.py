@@ -36,7 +36,7 @@ def path_split(path,
 			elif nontags and not all_commas:
 				yield p
 			else:
-				debug("Splitting on commas")
+				#debug("Splitting on commas")
 				yield from tags
 				yield from nontags
 	#
@@ -91,7 +91,7 @@ def walk(*args, min_rank=None, use_tagfiles=True, **kwargs):
 			files = [ f for f in files if not f.startswith('.') ] # prune out hidden files
 			src = os.path.relpath(root)
 			if (not files) or (src in ['.', '..', '']):
-				debug("Skipping fileless {src}".format(**locals()) )
+				#debug("Skipping fileless {src}".format(**locals()) )
 				continue
 			with suppress(FileNotFoundError):
 				stat_by_file = { f: os.stat(os.path.join(root, f)) for f in files }
