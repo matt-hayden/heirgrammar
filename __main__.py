@@ -7,4 +7,8 @@ logging.basicConfig(level=logging.WARNING)
 import sys
 
 from .cli import main
-sys.exit(main(*sys.argv[1:]))
+from .args import get_arguments
+
+#sys.exit(main(*sys.argv[1:]))
+#sys.exit( main(get_arguments()) )
+main(get_arguments())
