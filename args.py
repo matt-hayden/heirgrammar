@@ -5,19 +5,39 @@ logger = logging.getLogger('' if __name__ == '__main__' else __name__)
 debug, info, warning, error, fatal = logger.debug, logger.info, logger.warning, logger.error, logger.critical
 
 import argparse
-
-from cli import SubparserBase
-
-
-def setup(rules_dirs):
-	print("Setting up {}".format(rules_dirs))
+import glob
+import os, os.path
+import sys
 
 
-class TestArgs(SubparserBase):
+from . import parser # parser import *
+#from .cli import SubparserBase
+from . import cli
+
+info("CLI using parser "+parser.__version__)
+
+def setup(args=[ 'rules', '.rules', '../rules', '../.rules' ], **kwargs):
+	assert args
+	if isinstance(args, str):
+		return setup([args], **kwargs)
+	debug("Searching for rules in {}".format(args))
+	for searchme in args:
+		if os.path.isdir(searchme):
+			info("Using *.rules files found in '{}'".format(searchme))
+			rule_files = sorted(glob.glob(os.path.join(searchme, '*.rules')))
+			break
+	else:
+		panic("No rules directory found among {}".format(args))
+		sys.exit(-1)
+	parser.setup(rule_files)
+	return rule_files
+
+
+class TestArgs(cli.SubparserBase):
 	pass
-class PrintArgs(SubparserBase):
+class PrintArgs(cli.SubparserBase):
 	pass
-class SortArgs(SubparserBase):
+class SortArgs(cli.SubparserBase):
 	@staticmethod
 	def make_options(subparser):
 		if isinstance(subparser, argparse.ArgumentParser):
@@ -36,18 +56,32 @@ class SortArgs(SubparserBase):
 		newarg("--all-commas", action='store_true',
 			help="Split on every comma, not just commas seperating recognized tags")
 	def parse_options(self, options_in):
-		setup(options_in.rules.split(','))
+		rules_dirs = [ s.strip() for s in options_in.rules.split(',') ]
+		setup(rules_dirs)
 		self.options = { 'append'	:	options_in.append or [],
 						 'prepend':		options_in.prepend or [],
-						 'exclude':		options_in.exclude.split(','),
+						 'exclude':		set(s.strip() for s in options_in.exclude.split(',')),
 						 'use_tagfiles':	options_in.use_tagfiles,
 						 'no_commas':	options_in.no_commas,
 						 'all_commas':	options_in.all_commas }
 		if options_in.output:
-			self.options['output_filename'] = options_in.output
+			self.options['fileout'] = options_in.output
+		if options_in.prepend:
+			try:
+				a, b = parser.split(options_in.prepend.split(','))
+				options['prepend_tags'] = a+b
+			except:
+				error( "Invalid argument --prepend={}".format(options_in.prepend) )
+		if options_in.append:
+			try:
+				a, b = parser.split(options_in.append.split(','))
+				options['append_tags'] = a+b
+			except:
+				error( "Invalid argument --append={}".format(options_in.append) )
+		self.options['stopwords'] = self.options['exclude'] | set(['rules']) | set(rules_dirs)
 		self.args = options_in.args
 		return self
-class DirsplitArgs(SubparserBase):
+class DirsplitArgs(cli.SubparserBase):
 	@staticmethod
 	def make_options(subparser):
 		if isinstance(subparser, argparse.ArgumentParser):
@@ -84,19 +118,41 @@ def get_arguments(*args, **kwargs):
 	newarg('--verbose', '-v', action='store_const', dest='logging_level', const=logging.INFO)
 
 	sp = ap.add_subparsers(help="")
-	"""
-	DirsplitArgs('dirsplit').make_parser(sp)
-	PrintArgs('print').make_parser(sp)
-	SortArgs('sort').make_parser(sp)
-	TestArgs('test').make_parser(sp)
-	"""
-	DirsplitArgs('dirsplit', dirsplit)	>> sp
-	PrintArgs('print')	>> sp
-	SortArgs('sort', sort)	>> sp
-	TestArgs('test')	>> sp
+	DirsplitArgs('dirsplit')		>> sp
+	PrintArgs('print', cli_print)	>> sp
+	SortArgs('sort', cli_sort)		>> sp
+	TestArgs('test', cli_test)		>> sp
 	
 	return ap
-def sort(*args, **kwargs):
-	print('sort', args, kwargs)
+####
+
+
+#!/usr/bin/env python3
+
+
+#
+####
+def cli_print(*args, **kwargs):
+	from .pager import pager
+	with pager():
+		return parser.print_Taxonomy()
+def cli_test(*args, **kwargs):
+	for arg in kwargs.pop('EXPR'):
+		print('\n'.join(test(arg)) )
+		print()
+def cli_sort(*args, **kwargs):
+	shtools.arrange_dirs(*args, **options)
 def dirsplit(*args, **kwargs):
-	print('dirsplit', args, kwargs)
+	# identical to cli_sort, except volumesize member exists in options
+	shtools.arrange_dirs(*args, **options)
+def test(*args, sep=os.path.sep, **kwargs):
+	tags, nontags = parser.split(arg.replace(',', sep).split(sep) )
+	_, _, newpath = tools.path_arrange(args[0])
+	yield         "{arg} => {newpath}:".format(**locals())
+	if tags:
+		yield     "{:>30} {:^15} {:^9}".format("tag", "combined rank", "priority^")
+		for t in tags:
+			yield "{!r:>30} {: 15d} {: 9d}".format(t, t.rank, t.pri)
+		yield     "{:>30} {: 15d} {: 9d}".format("total", sum(t.rank for t in tags), max(t.pri for t in tags))
+	if nontags:
+		yield     "{nontags} are not tags".format(**locals())
