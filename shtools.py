@@ -70,14 +70,17 @@ FIND=find
 '''.format(**locals())
 	for n, (size, pairs) in enumerate(chunks, start=1):
 		if prefix:
+			vol_root = prefix.format(n)
 			yield '''
 ### Volume {n}: {size:,} bytes
+vol_root={vol_root}
 '''.format(**locals())
+			vol_root='${vol_root}'
 			for src, dest in pairs:
 				if dest and do_sort:
-					dest = prefix.format(n)+dest
+					dest = vol_root+os.path.sep+dest
 				else:
-					dest = prefix.format(n)+src
+					dest = vol_root+os.path.sep+src
 				yield _move(src, dest)
 		else:
 			for src, dest in pairs:
