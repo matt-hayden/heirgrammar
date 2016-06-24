@@ -99,7 +99,10 @@ def arrange_dirs(*args, fileout='', **kwargs):
 	if hasattr(fileout, 'write'):
 		debug("Writing to {}".format(fileout))
 		fileout.write(os.linesep.join(_get_lines(*args, **kwargs)))
-	elif isinstance(fileout, (str, int)):
+	elif isinstance(fileout, int):
+		with open(fileout, 'w') as fo:
+			return arrange_dirs(*args, fileout=fo, **kwargs)
+	elif isinstance(fileout, str) and fileout:
 		with open(fileout, 'w') as fo:
 			return arrange_dirs(*args, fileout=fo, **kwargs)
 	else:
