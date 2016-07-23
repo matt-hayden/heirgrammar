@@ -75,7 +75,6 @@ FIND=find
 ### Volume {n}: {size:,} bytes
 vol_root={vol_root}
 '''.format(**locals())
-			vol_root='${vol_root}'
 			for src, dest in pairs:
 				if dest and do_sort:
 					dest = vol_root+os.path.sep+dest

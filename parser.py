@@ -4,7 +4,7 @@ import os, os.path
 import re
 
 import logging
-logger=logging.getLogger(__name__)
+logger=logging.getLogger("" if __name__ == '__main__' else __name__)
 debug, info, warning, error, panic = logger.debug, logger.info, logger.warning, logger.error, logger.critical
 
 from .Taxon import *
@@ -158,6 +158,9 @@ def split(iterable, **kwargs):
 			(tags if isinstance(item, TaxonObject) else nontags).append(item)
 			tags.sort(key=key)
 	debug("{} => {}+{}".format(iterable, tags, nontags))
+	if tags:
+		debug("pri={}, rank={}".format(max(t.pri for t in tags),
+									   sum(t.rank for t in tags)) )
 	return tags, nontags
 def arrange(iterable, **kwargs):
 	"""
@@ -197,7 +200,9 @@ def get_custom_attributes():
 	for name, attribs in Taxonomy.items():
 		c.update(attribs.keys())
 	return c.most_common()
-def print_Taxonomy(header="lno "+"rank".rjust(25)+" -pri- count label"):
+def print_Taxonomy(labels=[],
+				   header="lno "+"rank".rjust(25)+" -pri- count label"):
+	show_tags = set(labels)
 	def key(args):
 		"""Deals in the elements of Taxonomy.items()
 		"""
@@ -209,18 +214,33 @@ def print_Taxonomy(header="lno "+"rank".rjust(25)+" -pri- count label"):
 		else:
 			return 0, 0, name or ''
 		#return 'isolate' in members, members.get('pri', 0), -members.get('rank', 0), name
+	#
 	if header:
 		print(header)
 		print("="*len(header))
-	for n, (name, attribs) in enumerate(sorted(Taxonomy.items(), key=key)):
+	#
+	for n, (name, attribs) in \
+		enumerate(sorted(Taxonomy.items(), key=key)):
+		if name is None:
+			debug("Ignoring tag 'None'")
+			continue
+		if show_tags:
+			if name in show_tags:
+				show_tags -= set([name])
+			else:
+				continue
 		try:
 			r = attribs['rank']
 			p = attribs['pri']
 			nbr_count = sum(1 for t, a in Taxonomy.items() if a.get('rank',None) == r)
 			print("{:03d} {:25d} {:5.1f} {:5d} {}".format(n, r, p, nbr_count, tag(name) ))
 		except KeyError as e:
-			print(name, "unsortable:", e)
+			warning("{} unsortable: {}".format(name, e))
 	print()
+	if show_tags:
+		for t in show_tags:
+			print("Not found: {}".format(t))
+		print()
 	for attrib, count in get_custom_attributes():
 		print(attrib, count)
 if __name__ == '__main__':

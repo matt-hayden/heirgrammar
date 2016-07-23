@@ -2,6 +2,7 @@
 from contextlib import suppress
 import os, os.path
 from os.path import exists, isfile, isdir
+import shlex
 import shutil
 
 import logging
@@ -55,8 +56,11 @@ def path_split(path,
 		pass
 	###
 	parts = path_parts if no_commas else list(_expand_commas(path_parts))
-	if set(stopwords) & set(parts):
+	sw = set(stopwords) & set(parts)
+	if sw:
 		debug("Stopword reached in {}".format(parts))
+		if sw == set(['delme']):
+			print('# {trash} {}'.format(shlex.quote(path), trash='trash'))
 		return [], path
 	tags, s = parser.split(parts, **options)
 	return tags, sep.join(str(p) for p in s)
