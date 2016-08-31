@@ -68,8 +68,14 @@ def path_arrange(*args, sep=os.path.sep, **kwargs):
 	options = kwargs
 	tags, newpath = path_split(*args, **options)
 	if tags:
-		highest_pri = max(t.pri for t in tags)
-		total_rank = sum(t.rank for t in tags)
+		try:
+			highest_pri = max(t.pri for t in tags)
+		except:
+			highest_pri = 0
+		try:
+			total_rank = sum(t.rank for t in tags)
+		except:
+			total_rank = 0
 	else:
 		highest_pri = total_rank = 0
 	return highest_pri, total_rank, sep.join(str(t) for t in tags+[newpath])

@@ -11,7 +11,7 @@ from .Taxon import *
 
 __version__ = 'parser 0.4'
 
-def define_tags(lines, direction=-1, init='''import string\nprint("# yee-haw!")''', **kwargs):
+def define_tags(lines, direction=-1, init='''import string''', **kwargs):
 	"""This is the major setup function for the module."""
 	# customize here:
 	highest_pri = len(lines)
@@ -150,7 +150,11 @@ def convert(iterable, remove_tags=None, prepend_tags=None, append_tags=None):
 	return pack(items)
 def split(iterable, **kwargs):
 	def key(t):
-		return t.rank
+		try:
+			return t.rank
+		except:
+			warning("{} unsortable".format(t))
+			return 0
 	cts = convert(iterable, **kwargs)
 	tags, nontags = [], []
 	for item in cts:
@@ -158,9 +162,9 @@ def split(iterable, **kwargs):
 			(tags if isinstance(item, TaxonObject) else nontags).append(item)
 			tags.sort(key=key)
 	debug("{} => {}+{}".format(iterable, tags, nontags))
-	if tags:
-		debug("pri={}, rank={}".format(max(t.pri for t in tags),
-									   sum(t.rank for t in tags)) )
+#	if tags:
+#		debug("pri={}, rank={}".format(max(t.pri for t in tags),
+#									   sum(t.rank for t in tags)) )
 	return tags, nontags
 def arrange(iterable, **kwargs):
 	"""

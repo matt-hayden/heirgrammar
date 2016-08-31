@@ -19,6 +19,8 @@ def _move(src, dest):
 	shsrc = shlex.quote(src)
 	if dest.endswith(src):
 		shdest = os.path.join(shlex.quote(dest[:-len(src)]), '"$src"')
+	elif dest.startswith(src):
+		shdest = os.path.join('"$src"', shlex.quote(dest[len(src):]))
 	else:
 		shdest = shlex.quote(dest)
 	syntax = '''src={shsrc} dest={shdest}

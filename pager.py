@@ -4,6 +4,7 @@ import contextlib
 import io
 import os
 import subprocess
+import sys
 
 PAGER = os.environ.get('PAGER', 'less')
 
@@ -11,9 +12,11 @@ PAGER = os.environ.get('PAGER', 'less')
 def pager(s=io.StringIO(),
 		  command=[PAGER],
 		  callback=None):
-	if os.isatty(1):
+	if sys.stdin.isatty(): # os.isatty(1):
 		def _output(t):
-			p = subprocess.Popen(command, stdin=subprocess.PIPE, universal_newlines=True)
+			p = subprocess.Popen(command,
+				stdin=subprocess.PIPE,
+				universal_newlines=True)
 			p.communicate( callback(t) if callback else t )
 	else:
 		def _output(t):

@@ -11,7 +11,7 @@ import sys
 
 from .argwrap import ArgWrap
 
-from . import parser, shtools
+from . import parser, shtools, tools
 info("CLI using parser "+parser.__version__)
 
 
@@ -33,6 +33,8 @@ def main(*args):
 	cli_test >> sp
 
 	my_args = ap.parse_args(*args) if args else ap.parse_args()
+	if not hasattr(my_args, 'func'):
+		return ap.print_help()
 	logging.basicConfig(level=my_args.logging_level)
 	return my_args.func(my_args).call()
 def setup(args=[ 'rules', '.rules', '../rules', '../.rules' ], **kwargs):
@@ -65,11 +67,8 @@ class DefaultArgs(ArgWrap):
 			rules_dirs = [ s.strip() for s in rules_dirs.split(',') ]
 		self.options['stopwords'] = exclude | set(['rules']) | set(rules_dirs)
 		setup(rules_dirs)
+		self.args = options_in.args
 		return self
-class TestArgs(DefaultArgs):
-	pass
-class PrintArgs(DefaultArgs):
-	pass
 class SortArgs(DefaultArgs):
 	"""
 	Subclass defining the arguments for the 'sort' subcommand
@@ -101,18 +100,18 @@ class SortArgs(DefaultArgs):
 		if options_in.prepend:
 			try:
 				a, b = parser.split(options_in.prepend.split(','))
-				options['prepend_tags'] = a+b
+				self.options['prepend_tags'] = a+b
 			except:
 				error( "Invalid argument --prepend={}".format(options_in.prepend) )
 				raise
 		if options_in.append:
 			try:
 				a, b = parser.split(options_in.append.split(','))
-				options['append_tags'] = a+b
+				self.options['append_tags'] = a+b
 			except:
 				error( "Invalid argument --append={}".format(options_in.append) )
 				raise
-		self.args = options_in.args
+		#self.args = options_in.args
 		return self
 class DirsplitArgs(SortArgs):
 	@staticmethod
@@ -143,15 +142,18 @@ class DirsplitArgs(SortArgs):
 		return self
 
 
-@PrintArgs
+@DefaultArgs
 def cli_print(*args, **kwargs):
 	from .pager import pager
 	with pager():
-		return parser.print_Taxonomy()
-@TestArgs
+		return parser.print_Taxonomy(labels=args)
+@DefaultArgs
 def cli_test(*args, **kwargs):
+	if not args:
+		return 
 	info("Testing "+" ".join(args))
 	for arg in args:
+		print(arg)
 		print('\n'.join(test(arg)) )
 		print()
 @SortArgs
