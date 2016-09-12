@@ -52,6 +52,9 @@ def path_split(path,
 		if n.isdigit():
 			debug("Removing extension from {}".format(path_parts[0]))
 			path_parts[0] = p
+		elif n in [ '~{}~'.format(x) for x in range(1,9+1) ]:
+			debug("Removing backup extension from {}".format(path_parts[0]))
+			path_parts[0] = p
 	except:
 		pass
 	###
