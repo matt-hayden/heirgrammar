@@ -17,10 +17,10 @@ def _move(src, dest):
 	if os.path.relpath(src) == os.path.relpath(dest):
 		return ''
 	shsrc = shlex.quote(src)
-	if dest.endswith(src):
-		shdest = os.path.join(shlex.quote(dest[:-len(src)]), '"$src"')
-	elif dest.startswith(src):
-		shdest = os.path.join('"$src"', shlex.quote(dest[len(src):]))
+#	if dest.endswith(src):
+#		shdest = os.path.join(shlex.quote(dest[:-len(src)]), '"$src"')
+	if src in dest:
+		shdest = shlex.quote(dest).replace(src, '"$src"')
 	else:
 		shdest = shlex.quote(dest)
 	syntax = '''src={shsrc} dest={shdest}
