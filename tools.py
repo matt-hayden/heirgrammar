@@ -4,12 +4,18 @@ import os, os.path
 from os.path import exists, isfile, isdir
 import shlex
 import shutil
+import sys
 
 import logging
 logger = logging.getLogger(__name__)
 debug, info, warning, error, panic = logger.debug, logger.info, logger.warning, logger.error, logger.critical
 
-import tqdm
+if sys.stderr.isatty():
+	import tqdm
+	progress_bar = tqdm.tqdm
+else:
+	def progress_bar(iterable, **kwargs):
+		return iterable
 
 from . import parser, tagfile
 
@@ -180,8 +186,8 @@ def chunk(*args,
 		def key(arg):
 			p, r, s, _ = arg
 			return r, -s
-	my_list = sorted(tqdm.tqdm(walk(*args, **options),
-							   desc="{} arguments".format(len(args)) ),
+	my_list = sorted(progress_bar(walk(*args, **options),
+								  desc="{} arguments".format(len(args)) ),
 					 key=key)
 	if not volumesize:
 		osize = len(my_list)
@@ -196,8 +202,8 @@ def chunk(*args,
 		else:
 			return []
 	else:
-		return list( tqdm.tqdm(chunker(my_list, volumesize),
-							   desc='Sorting...') )
+		return list(progress_bar(chunker(my_list, volumesize),
+								 desc='Sorting...'))
 #
 if __name__ == '__main__':
 	from glob import glob
