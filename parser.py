@@ -11,7 +11,14 @@ from .Taxon import *
 
 __version__ = 'parser 0.4'
 
-def define_tags(lines, direction=-1, init='''import string''', **kwargs):
+"""
+
+Not optional:
+
+You must input a ruleset through parser.setup()
+"""
+
+def define_tags(lines, direction=-1, init='''import string\nprint("# yee-haw!")''', **kwargs):
 	"""This is the major setup function for the module."""
 	# customize here:
 	highest_pri = len(lines)
@@ -182,13 +189,19 @@ def arrange(iterable, **kwargs):
 	else:
 		highest_pri = total_rank = 0
 	return highest_pri, total_rank, tags+nontags
-def _read(*args, delim=re.compile('\n[ \t]*\n')):
+def _read(*args, delim=re.compile('\n\s*\n')):
 	for fn in sorted(args):
-		assert os.path.isfile(fn) and os.path.getsize(fn)
+		assert os.path.isfile(fn)
+		if not os.path.getsize(fn):
+			continue
 		debug("Reading "+fn)
 		with open(fn) as fi:
 			yield from delim.split(fi.read())
 def setup(arg, **kwargs):
+	"""
+Example:
+parser.setup( glob.glob(os.path.expanduser('/path/to/rules')) )
+	"""
 	if not arg:
 		Taxonomy = {None: {'id': 0, 'name': None }}
 		return
