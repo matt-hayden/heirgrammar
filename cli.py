@@ -53,7 +53,6 @@ def main(*args, **kwargs):
 
 	stopwords = set(s.strip() for s in kwargs.pop('--exclude').split(','))
 	stopwords.update(set(rules_dirs))
-	assert 'rules' in stopwords # TODO
 
 	options['stopwords'] = stopwords
 
