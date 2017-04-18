@@ -1,4 +1,7 @@
-#! /usr/bin/env python3
+
+"""
+Simple wrapper around console pager.
+"""
 
 import contextlib
 import io
@@ -12,7 +15,12 @@ PAGER = os.environ.get('PAGER', 'less')
 def pager(s=io.StringIO(),
 		  command=[PAGER],
 		  callback=None):
-	if sys.stdin.isatty(): # os.isatty(1):
+	"""
+	>>> with pager() as p:
+		print("Hello World")
+		print("Brought to you by the letter p")
+	"""
+	if os.isatty(1):
 		def _output(t):
 			p = subprocess.Popen(command,
 				stdin=subprocess.PIPE,
@@ -27,8 +35,3 @@ def pager(s=io.StringIO(),
 	if bsize:
 		s.seek(0)
 		_output(s.read())
-#
-if __name__ == '__main__':
-	with pager() as p:
-		print("Hello World")
-		print("Brought to you by the letter p")

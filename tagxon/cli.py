@@ -1,14 +1,11 @@
 #! /usr/bin/env python3
 
-import logging
-logger = logging.getLogger('' if __name__ == '__main__' else __name__)
-debug, info, warning, error, panic = logger.debug, logger.info, logger.warning, logger.error, logger.critical
-
 import argparse
 import glob
 import os, os.path
 import sys
 
+from . import debug, info, warning, error, fatal
 from .argwrap import ArgWrap
 
 from . import parser, shtools, tools
@@ -48,7 +45,7 @@ def setup(args=[ 'rules', '.rules', '../rules', '../.rules' ], **kwargs):
 			rule_files = sorted(glob.glob(os.path.join(searchme, '*.rules')))
 			break
 	else:
-		panic("No rules directory found among {}".format(args))
+		fatal("No rules directory found among {}".format(args))
 		sys.exit(-1)
 	parser.setup(rule_files)
 	return rule_files
@@ -69,6 +66,8 @@ class DefaultArgs(ArgWrap):
 		setup(rules_dirs)
 		self.args = options_in.args
 		return self
+
+
 class SortArgs(DefaultArgs):
 	"""
 	Subclass defining the arguments for the 'sort' subcommand
@@ -113,6 +112,8 @@ class SortArgs(DefaultArgs):
 				raise
 		#self.args = options_in.args
 		return self
+
+
 class DirsplitArgs(SortArgs):
 	@staticmethod
 	def make_options(subparser):
@@ -176,7 +177,8 @@ def test(arg, sep=os.path.sep):
 		yield     "{:>30} {: 15d} {: 9d}".format("total", sum(t.rank for t in tags), max(t.pri for t in tags))
 	if nontags:
 		yield     "{nontags} are not tags".format(**locals())
-#
+
+
 def main(*args, **kwargs):
 	rules_dirs = kwargs.pop('--rules').split(',')
 	setup(rules_dirs)

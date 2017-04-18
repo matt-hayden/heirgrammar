@@ -1,14 +1,12 @@
-#!/usr/bin/env python3
+
 import os, os.path
 import shlex
 import sys
 
-import logging
-logger=logging.getLogger(__name__)
-debug, info, warning, error, panic = logger.debug, logger.info, logger.warning, logger.error, logger.critical
+from . import debug, info, warning, error, fatal
 
 from .tools import *
-from .utils import *
+
 
 def _move(src, dest):
 	assert os.path.exists(src)
@@ -30,13 +28,15 @@ def _move(src, dest):
   [[ -d "$src" ]] && $MV -t "$dest" "$src"/*.* || file_error "$src"
 '''.format(**locals())
 	return syntax
+
+
 def hier_arrange(*args, prefix='', init='', **kwargs):
 	if not args:
 		args = ('.',)
 	if args == ('.',):
 		fargs = ''
 	else:
-		fargs = sq(*args)
+		fargs = ' '.join(shlex.quote(a) for a in args)
 	do_sort = kwargs.pop('do_sort', True)
 	chunks = chunk(*args, **kwargs) # returns a list of (size, (src, dest)) with dest=None for no change
 	if not chunks:
@@ -93,6 +93,7 @@ vol_root={vol_root}
 		yield '''
 $FIND {fargs} -empty -delete
 '''.format(**locals())
+
 
 def arrange_dirs(*args, fileout='', **kwargs):
 	def _get_lines(*args, **kwargs):

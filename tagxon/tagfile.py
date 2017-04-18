@@ -1,11 +1,9 @@
-#! /usr/bin/env python3
+
 import collections
-from contextlib import suppress
 import json
 import os, os.path
-#import string
 
-from . import parser
+from . import debug, info, warning, error, fatal
 
 def get_common_prefix(*args):
 	lengths = [ len(s) for s in args ]

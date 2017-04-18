@@ -1,11 +1,9 @@
-#!/usr/bin/env python3
+
 import collections
 import os, os.path
 import re
 
-import logging
-logger=logging.getLogger("" if __name__ == '__main__' else __name__)
-debug, info, warning, error, panic = logger.debug, logger.info, logger.warning, logger.error, logger.critical
+from . import debug, info, warning, error, fatal
 
 from .Taxon import *
 
@@ -260,6 +258,8 @@ def print_Taxonomy(labels=[],
 		print()
 	for attrib, count in get_custom_attributes():
 		print(attrib, count)
+
+
 if __name__ == '__main__':
 	import doctest
 	from glob import glob

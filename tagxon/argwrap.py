@@ -1,10 +1,11 @@
-#! /usr/bin/env python3
 
-import logging
-logger = logging.getLogger('' if __name__ == '__main__' else __name__)
-debug, info, warning, error, panic = logger.debug, logger.info, logger.warning, logger.error, logger.critical
+"""
+Command-line argument parser
+"""
 
 import argparse
+
+from . import debug, info, warning, error, fatal
 
 
 class ArgWrap:

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 from contextlib import suppress
 import os, os.path
 from os.path import exists, isfile, isdir
@@ -6,18 +7,10 @@ import shlex
 import shutil
 import sys
 
-import logging
-logger = logging.getLogger(__name__)
-debug, info, warning, error, panic = logger.debug, logger.info, logger.warning, logger.error, logger.critical
-
-if sys.stderr.isatty():
-	import tqdm
-	progress_bar = tqdm.tqdm
-else:
-	def progress_bar(iterable, **kwargs):
-		return iterable
-
 from . import parser, tagfile
+from . import debug, info, warning, error, fatal
+from . import progress_bar
+
 
 def path_split(path,
 			   sep=os.path.sep,
@@ -204,7 +197,8 @@ def chunk(*args,
 	else:
 		return list(progress_bar(chunker(my_list, volumesize),
 								 desc='Sorting...'))
-#
+
+
 if __name__ == '__main__':
 	from glob import glob
 	import sys
