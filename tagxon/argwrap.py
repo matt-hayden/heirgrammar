@@ -1,11 +1,19 @@
-
 """
 Command-line argument parser
 """
 
 import argparse
 
-from . import debug, info, warning, error, fatal
+
+try:
+	"""
+	If used in a package, package logging functions are used instead of stderr.
+	"""
+	from . import debug, info, warning, error, fatal
+except:
+	def error(*args, **kwargs):
+		print(*args, file=sys.stderr, **kwargs)
+	debug = info = warning = fatal = error
 
 
 class ArgWrap:

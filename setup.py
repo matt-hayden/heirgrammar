@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 setup(name='tagxon',
       use_vcs_version=True,
       description='Parser for a hideous yet powerful taxonomic description syntax',
-      url='http://github.com/matt-hayden/tagxon',
+      url='https://github.com/matt-hayden/tagxon',
 	  maintainer="Matt Hayden",
 	  maintainer_email="github.com/matt-hayden",
       license='Unlicense',

@@ -3,7 +3,17 @@ import collections
 import json
 import os, os.path
 
-from . import debug, info, warning, error, fatal
+
+try:
+	"""
+	If used in a package, package logging functions are used instead of stderr.
+	"""
+	from . import debug, info, warning, error, fatal
+except:
+	def error(*args, **kwargs):
+		print(*args, file=sys.stderr, **kwargs)
+	debug = info = warning = fatal = error
+
 
 def get_common_prefix(*args):
 	lengths = [ len(s) for s in args ]
@@ -16,6 +26,7 @@ def get_common_prefix(*args):
 		else:
 			break
 	return p
+
 
 def parse_tagfile(filename, tags=[], nontags=[]):
 	with open(filename) as fi:

@@ -4,7 +4,6 @@ import os, os.path
 import re
 
 from . import debug, info, warning, error, fatal
-
 from .Taxon import *
 
 __version__ = 'parser 0.4'
@@ -173,13 +172,13 @@ def split(iterable, **kwargs):
 	return tags, nontags
 def arrange(iterable, **kwargs):
 	"""
->>> arrange('green blue +18 nogreen puce'.split()) 
-(10, -9, [<blue>, <puce>, '+18'])
+	>>> arrange('green blue +18 nogreen puce'.split()) 
+	(10, -9, [<blue>, <puce>, '+18'])
 
->>> arrange('green blue +18 nogreen mauve'.split()) 
-(10, -27, [<blue>, <purple>, <puce>, <mauve>, '+18'])
+	>>> arrange('green blue +18 nogreen mauve'.split()) 
+	(10, -27, [<blue>, <purple>, <puce>, <mauve>, '+18'])
 
-"""
+	"""
 	tags, nontags = split(iterable, **kwargs)
 	if tags:
 		highest_pri = max(t.pri for t in tags)
@@ -215,6 +214,8 @@ def get_custom_attributes():
 	for name, attribs in Taxonomy.items():
 		c.update(attribs.keys())
 	return c.most_common()
+
+
 def print_Taxonomy(labels=[],
 				   header="lno "+"rank".rjust(25)+" -pri- count label"):
 	show_tags = set(labels)

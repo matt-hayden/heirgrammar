@@ -2,11 +2,10 @@
 import os, os.path
 import sys
 
-from . import debug, info, warning, error, fatal
+import logging
+logger = logging.getLogger('' if __name__ == '__main__' else __name__)
+debug, info, warning, error, fatal = logger.debug, logger.info, logger.warning, logger.error, logger.critical
 
-
-from .pager import pager # ought to be an external module
-from . import parser, tools, shtools, tagfile
 
 if sys.stderr.isatty():
 	import tqdm
@@ -14,6 +13,3 @@ if sys.stderr.isatty():
 else:
 	def progress_bar(iterable, **kwargs):
 		return iterable
-
-__all__ = 'parser tools shtools tagfile'.split()
-
