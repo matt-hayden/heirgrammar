@@ -20,7 +20,7 @@ def _move(src, dest):
 		ps = [b] if b else []
 		ps.append('"$src"')
 		if e: ps.append(e)
-		shdest = os.path.join(ps)
+		shdest = os.path.join(*ps)
 	else:
 		shdest = shlex.quote(dest)
 	syntax = '''src={shsrc} dest={shdest}
