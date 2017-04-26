@@ -7,7 +7,19 @@ from . import debug, info, warning, error, fatal
 
 from .tools import *
 
-
+def _path_sub(src, dest, subst='"${src}"'):
+	if src in dest:
+		b, e = dest.split(src, 1)
+		while e.startswith(os.path.sep):
+			e = e[1:]
+		ps = []
+		y = ps.append
+		if b: y(b)
+		y(subst)
+		if e: y(e)
+		return os.path.join(*ps)
+	else:
+		return shlex.quote(dest)
 def _move(src, dest):
 	assert os.path.exists(src)
 	if os.path.exists(dest):
@@ -15,14 +27,7 @@ def _move(src, dest):
 	if os.path.relpath(src) == os.path.relpath(dest):
 		return ''
 	shsrc = shlex.quote(src)
-	if src in dest:
-		b, e = dest.split(src, 1)
-		ps = [b] if b else []
-		ps.append('"$src"')
-		if e: ps.append(e)
-		shdest = os.path.join(*ps)
-	else:
-		shdest = shlex.quote(dest)
+	shdest = _path_sub(src, dest)
 	syntax = '''src={shsrc} dest={shdest}
   [[ -d "$dest" ]] || mkdir -p "$dest"
   [[ -d "$src" ]] && $MV -t "$dest" "$src"/*.* || file_error "$src"
